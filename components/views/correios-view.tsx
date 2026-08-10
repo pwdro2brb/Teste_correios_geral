@@ -5,6 +5,7 @@ import { Plus, Search, Tag, MapPin, ShieldAlert } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/status-badge'
+import { useProfile } from '@/components/profile-context'
 import { formatBRL } from '@/lib/format'
 import { ContatoSalvo, Postagem, contatosSalvos, postagens, servicosCorreios } from '@/lib/mock-data'
 
@@ -28,6 +29,7 @@ const initialFormState = {
 }
 
 export function CorreiosView() {
+  const { profile } = useProfile()
   const [postagensState, setPostagensState] = useState<Postagem[]>(postagens)
   const [contatosState, setContatosState] = useState<ContatoSalvo[]>(contatosSalvos)
   const [showForm, setShowForm] = useState(false)
@@ -79,6 +81,7 @@ export function CorreiosView() {
       status: 'postado',
       valor: estimatedValue,
       data: new Date().toLocaleDateString('pt-BR'),
+      colaborador: profile.nome,
     }
 
     setPostagensState((prev) => [novoRegistro, ...prev])
@@ -324,7 +327,7 @@ export function CorreiosView() {
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           <Card>
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">Postagens listadas</p>

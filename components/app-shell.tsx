@@ -29,7 +29,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen" style={{ backgroundColor: '#fafaf9', color: '#333333' }}>
       <Sidebar
         active={active}
         onNavigate={navigate}

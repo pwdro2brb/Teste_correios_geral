@@ -50,6 +50,7 @@ export interface Postagem {
   status: 'postado' | 'em_transito' | 'entregue' | 'atrasado'
   valor: number
   data: string
+  colaborador: string
 }
 
 export const servicosCorreios: ServicoCorreio[] = [
@@ -123,6 +124,7 @@ export const postagens: Postagem[] = [
     status: 'em_transito',
     valor: 38.9,
     data: '28/07/2026',
+    colaborador: 'Ana Ribeiro',
   },
   {
     codigo: 'BR842390932SP',
@@ -139,6 +141,7 @@ export const postagens: Postagem[] = [
     status: 'entregue',
     valor: 24.5,
     data: '27/07/2026',
+    colaborador: 'Ana Ribeiro',
   },
   {
     codigo: 'BR842388120SP',
@@ -155,6 +158,7 @@ export const postagens: Postagem[] = [
     status: 'atrasado',
     valor: 52.3,
     data: '25/07/2026',
+    colaborador: 'Carlos Menezes',
   },
   {
     codigo: 'BR842401288SP',
@@ -171,6 +175,7 @@ export const postagens: Postagem[] = [
     status: 'postado',
     valor: 41.2,
     data: '28/07/2026',
+    colaborador: 'Ana Ribeiro',
   },
   {
     codigo: 'BR842399471SP',
@@ -187,6 +192,7 @@ export const postagens: Postagem[] = [
     status: 'entregue',
     valor: 29.9,
     data: '26/07/2026',
+    colaborador: 'Carlos Menezes',
   },
 ]
 
@@ -205,6 +211,7 @@ export interface Malote {
   confirmacao: string
   ultimoEvento: string
   atualizadoEm: string
+  solicitante: string
 }
 
 export interface MaloteRota {
@@ -237,6 +244,7 @@ export const malotes: Malote[] = [
     confirmacao: 'QR-4912',
     ultimoEvento: 'Coletado no ponto de origem',
     atualizadoEm: 'Hoje, 09:42',
+    solicitante: 'Ana Ribeiro',
   },
   {
     id: 'MAL-0908',
@@ -253,6 +261,7 @@ export const malotes: Malote[] = [
     confirmacao: 'QR-4908',
     ultimoEvento: 'Aguardando coleta',
     atualizadoEm: 'Hoje, 08:15',
+    solicitante: 'Ana Ribeiro',
   },
   {
     id: 'MAL-0901',
@@ -269,6 +278,7 @@ export const malotes: Malote[] = [
     confirmacao: 'QR-4901',
     ultimoEvento: 'Entregue e protocolado',
     atualizadoEm: 'Ontem, 17:30',
+    solicitante: 'Carlos Menezes',
   },
   {
     id: 'MAL-0898',
@@ -285,6 +295,7 @@ export const malotes: Malote[] = [
     confirmacao: 'QR-4898',
     ultimoEvento: 'Em trânsito - hub Curitiba',
     atualizadoEm: 'Hoje, 07:05',
+    solicitante: 'Carlos Menezes',
   },
 ]
 
