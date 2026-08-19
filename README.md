@@ -1,86 +1,57 @@
-# Teste Correios Geral
+# 📦 Logistics Hub - Gestão de Encomendas, Rastreios & Rateio
 
-Este projeto é uma aplicação web para acompanhamento operacional e financeiro de processos logísticos, com foco em correios, malotes, percursos, notificações e centros de custo.
+> Plataforma web centralizada para automação logística, emissão de etiquetas, acompanhamento de rastreios em tempo real e rateio financeiro por Centro de Custo.
 
-## Objetivo
+![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge)
 
-O sistema foi desenvolvido para oferecer uma visão centralizada das atividades logísticas e permitir o monitoramento de:
+---
 
-- postagens e entregas;
-- movimentação de malotes;
-- solicitações de novos percursos;
-- notificações operacionais;
-- gastos por centro de custo.
+## 🎯 O Problema & A Solução
 
-A interface foi pensada para funcionar como um painel executivo, com navegação por módulos e visualização de indicadores principais.
+Em operações corporativas de grande escala, a gestão de correspondências e malotes frequentemente sofre com falta de visibilidade nos gastos por centro de custo, lentidão na criação de etiquetas e consultas manuais de status de entrega.
 
-## Tecnologias utilizadas
+O **Logistics Hub** resolve esse gargalo fornecendo:
+* **Geração de Etiquetas e Pré-Postagem:** Fluxo simplificado para solicitação e geração de etiquetas via integração direta com a **API dos Correios**.
+* **Rateio Financeiro Automático:** Associação direta de cada envio ao seu respectivo Centro de Custo (CC), facilitando a prestação de contas contábil.
+* **Notificações Ativas:** Monitoramento de status de entrega integrado com webhooks do **Microsoft Teams** para avisos automáticos de movimentação e entrega.
+* **Painel Executivo:** Dashboard com métricas consolidadas de volume, gastos e prazos médios de entrega.
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- lucide-react
+---
 
-## Recursos principais
+## 👥 Controle de Acesso e Papéis (RBAC)
 
-### 🎨 Sistema de Design
-- **Paleta de cores universal**: Verde (#55 155), Laranja (#62 55), Branco (#98 001), Cinza (#92 003)
-- **Tema em modo claro**: Aplicado globalmente para melhor legibilidade
-- **CSS Variables em OKLCH**: Sistema de cores adaptativo e acessível
-- **Sidebar cinza claro**: Interface limpa e moderna com `--sidebar: oklch(0.94 0.003 0)`
+O sistema implementa regras de visualização baseadas no perfil do usuário via `ProfileContext`:
 
-### 👥 Controle de Acesso e Filtros por Papel
-O sistema implementa filtros baseados no papel do usuário:
+| Papel | Permissões de Acesso |
+| :--- | :--- |
+| **Colaborador** | Solicita envios e acompanha apenas seus próprios registros e malotes. |
+| **Operador Logístico** | Gerencia solicitações de todas as áreas, emite etiquetas e atualiza status. |
+| **Administrador** | Acesso completo a relatórios financeiros, rateios consolidados e cadastros. |
 
-- **Colaborador**: Visualiza apenas seus próprios registros (postagens, malotes)
-- **Operador Logístico**: Visualiza registros de todos os colaboradores
-- **Administrador**: Acesso completo a toda a plataforma e dados
+---
 
-Os filtros são aplicados através do `ProfileContext` em componentes como `dashboard-view`, garantindo que cada usuário veja apenas os dados relevantes ao seu papel.
+## 🛠️ Tecnologias Utilizadas
 
-## Estrutura principal
+* **Framework:** [Next.js](https://nextjs.org/) (App Router)
+* **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
+* **Estilização:** [Tailwind CSS](https://tailwindcss.com/) com paleta moderna baseada em variáveis CSS (`OKLCH`)
+* **Componentes:** [shadcn/ui](https://ui.shadcn.com/) & [Lucide Icons](https://lucide.dev/)
+* **Integrações (Planejadas/Em Desenvolvimento):** API Correios REST & Microsoft Teams Incoming Webhooks
 
-- `app/`: estrutura principal da aplicação e página inicial
-- `components/`: componentes de interface, shell da aplicação, sidebar, topbar e views
-- `lib/`: dados mockados, regras de perfil e utilidades
-- `public/`: arquivos estáticos
+---
 
-## Como executar localmente
+## 🚀 Como Executar o Projeto Localmente
 
-1. Instale as dependências:
+### Pré-requisitos
+* [Node.js](https://nodejs.org/) (versão 18 ou superior)
+* [pnpm](https://pnpm.io/) ou `npm`
+
+### Passo a Passo
+
+1. **Clone o repositório:**
    ```bash
-   pnpm install
-   ```
-
-2. Inicie o servidor de desenvolvimento:
-   ```bash
-   $env:Path = "C:\Users\pedro.henrsilva\OneDrive - MRV\Área de Trabalho\node-v24.18.0-win-x64;" + $env:Path
-   pnpm dev
-   ```
-   
-   Ou simplesmente:
-   ```bash
-   npm.cmd run dev
-   ```
-
-3. Acesse no navegador:
-   ```text
-   http://localhost:3000
-   ```
-
-## Customização de tema
-
-O tema da aplicação é controlado através de variáveis CSS em `app/globals.css`. Para alterar cores:
-
-- `--background`: Cor de fundo principal
-- `--primary`: Cor primária (verde)
-- `--accent`: Cor de destaque (laranja)
-- `--sidebar`: Cor da barra lateral
-
-Todas as cores utilizam o espaço de cor OKLCH para melhor consistência visual.
-
-## Observação
-
-Os dados exibidos no projeto são mockados para simular uma experiência de uso real de forma rápida e visual.
+   git clone [https://github.com/pwdro2brb/Teste_correios_geral.git](https://github.com/pwdro2brb/Teste_correios_geral.git)
+   cd Teste_correios_geral
