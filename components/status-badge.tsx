@@ -10,6 +10,7 @@ const MAP: Record<string, { label: string; variant: Variant }> = {
   atrasado: { label: 'Atrasado', variant: 'danger' },
   // malotes
   aguardando: { label: 'Aguardando coleta', variant: 'secondary' },
+  aguardando_coleta: { label: 'Aguardando coleta', variant: 'secondary' },
   // percursos
   pendente: { label: 'Pendente', variant: 'warning' },
   aprovado: { label: 'Aprovado', variant: 'success' },

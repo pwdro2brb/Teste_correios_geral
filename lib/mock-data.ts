@@ -26,12 +26,15 @@ export interface ContatoSalvo {
   endereco: Endereco
   centroCusto: string
   telefone: string
+  escopo?: 'universal' | 'pessoal'
 }
 
 export interface ServicoCorreio {
   tipo: string
+  codigoServico: string
   descricao: string
   prazo: string
+  faixaPreco: 'Baixa' | 'Média' | 'Alta'
   valorEstimado: number
 }
 
@@ -56,21 +59,59 @@ export interface Postagem {
 export const servicosCorreios: ServicoCorreio[] = [
   {
     tipo: 'PAC',
+    codigoServico: '03298',
     descricao: 'Entrega econômica com rastreio',
     prazo: '5-8 dias úteis',
+    faixaPreco: 'Baixa',
     valorEstimado: 28.4,
   },
   {
     tipo: 'SEDEX',
+    codigoServico: '03220',
     descricao: 'Entrega expressa com rastreio',
     prazo: '2-3 dias úteis',
+    faixaPreco: 'Média',
     valorEstimado: 55.2,
   },
   {
     tipo: 'SEDEX 12',
+    codigoServico: '03140',
     descricao: 'Entrega até às 12h do próximo dia útil',
     prazo: '1 dia útil',
+    faixaPreco: 'Alta',
     valorEstimado: 89.9,
+  },
+  {
+    tipo: 'SEDEX Hoje',
+    codigoServico: '04812',
+    descricao: 'Entrega no mesmo dia, quando disponível',
+    prazo: 'Até 24h',
+    faixaPreco: 'Alta',
+    valorEstimado: 129.0,
+  },
+  {
+    tipo: 'PAC + AR',
+    codigoServico: '03298',
+    descricao: 'PAC com adicional de aviso de recebimento',
+    prazo: '5-10 dias úteis',
+    faixaPreco: 'Média',
+    valorEstimado: 42.5,
+  },
+  {
+    tipo: 'SEDEX + AR',
+    codigoServico: '03220',
+    descricao: 'SEDEX com adicional de aviso de recebimento',
+    prazo: '2-4 dias úteis',
+    faixaPreco: 'Alta',
+    valorEstimado: 68.4,
+  },
+  {
+    tipo: 'SEDEX 12 + AR',
+    codigoServico: '03140',
+    descricao: 'SEDEX 12 com aviso de recebimento',
+    prazo: 'Até 1 dia útil',
+    faixaPreco: 'Alta',
+    valorEstimado: 108.2,
   },
 ]
 
@@ -90,6 +131,7 @@ export const contatosSalvos: ContatoSalvo[] = [
     },
     centroCusto: 'CC-4021 · Engenharia',
     telefone: '(31) 3333-4444',
+    escopo: 'universal',
   },
   {
     id: 'C2',
@@ -105,6 +147,24 @@ export const contatosSalvos: ContatoSalvo[] = [
     },
     centroCusto: 'CC-4021 · Engenharia',
     telefone: '(19) 3232-4455',
+    escopo: 'universal',
+  },
+  {
+    id: 'C3',
+    tipo: 'destinatario',
+    nome: 'Cartório 3º Ofício',
+    endereco: {
+      cep: '30140-071',
+      rua: 'Rua dos Aimorés',
+      numero: '1000',
+      bairro: 'Boa Viagem',
+      cidade: 'Belo Horizonte',
+      uf: 'MG',
+      complemento: 'Sala 201',
+    },
+    centroCusto: 'CC-1180 · Jurídico',
+    telefone: '(31) 3255-1234',
+    escopo: 'pessoal',
   },
 ]
 
@@ -201,7 +261,7 @@ export interface Malote {
   rota: string
   origem: string
   destino: string
-  status: 'aguardando' | 'em_transito' | 'entregue'
+  status: 'aguardando_coleta' | 'em_transito' | 'entregue'
   responsavel: string
   centroCusto: string
   chamado: string
@@ -251,7 +311,7 @@ export const malotes: Malote[] = [
     rota: 'Regional SP → Obra Spazio',
     origem: 'São Paulo/SP',
     destino: 'Campinas/SP',
-    status: 'aguardando',
+    status: 'aguardando_coleta_coleta',
     responsavel: 'Fernanda Lopes',
     centroCusto: 'CC-4021 · Engenharia',
     chamado: '#INC-20510',
