@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/status-badge'
 import { formatBRL } from '@/lib/format'
+import { useScrollIntoView } from '@/lib/use-scroll-into-view'
 import { type Malote, maloteRotas, malotes } from '@/lib/mock-data'
 
 const initialMaloteForm = {
@@ -22,6 +23,7 @@ export function MalotesView() {
   const [malotesState, setMalotesState] = useState<Malote[]>(malotes)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(initialMaloteForm)
+  const formRef = useScrollIntoView<HTMLDivElement>(showForm)
 
   const activeRoutes = maloteRotas.filter((rota) => rota.ativo)
   const selectedRoute = maloteRotas.find((rota) => rota.id === form.rotaId) ?? maloteRotas[0]
@@ -91,7 +93,7 @@ export function MalotesView() {
       </div>
 
       {showForm && (
-        <Card>
+        <Card ref={formRef}>
           <CardContent className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>

@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Plus, Check, X, Route, ShieldAlert, Search } from 'lucide-react'
+import { Plus, Check, X, Route, ShieldAlert } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { SearchField } from '@/components/ui/search-field'
 import { StatusBadge } from '@/components/status-badge'
 import { formatBRL } from '@/lib/format'
 import { percursos } from '@/lib/mock-data'
@@ -47,14 +48,12 @@ export function PercursosView() {
         )}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
+      <div className="max-w-sm">
+        <SearchField
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar por rota, solicitante ou ID"
-          className="h-9 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 

@@ -42,6 +42,8 @@ export interface Postagem {
   codigo: string
   remetente: string
   destinatario: string
+  origem: Endereco
+  destino: Endereco
   cidade: string
   centroCusto: string
   chamado: string
@@ -54,6 +56,16 @@ export interface Postagem {
   valor: number
   data: string
   colaborador: string
+}
+
+const enderecoSede: Endereco = {
+  cep: '30170-010',
+  rua: 'Av. do Contorno',
+  numero: '6000',
+  bairro: 'Funcionários',
+  cidade: 'Belo Horizonte',
+  uf: 'MG',
+  complemento: 'Torre A',
 }
 
 export const servicosCorreios: ServicoCorreio[] = [
@@ -80,14 +92,6 @@ export const servicosCorreios: ServicoCorreio[] = [
     prazo: '1 dia útil',
     faixaPreco: 'Alta',
     valorEstimado: 89.9,
-  },
-  {
-    tipo: 'SEDEX Hoje',
-    codigoServico: '04812',
-    descricao: 'Entrega no mesmo dia, quando disponível',
-    prazo: 'Até 24h',
-    faixaPreco: 'Alta',
-    valorEstimado: 129.0,
   },
   {
     tipo: 'PAC + AR',
@@ -173,6 +177,8 @@ export const postagens: Postagem[] = [
     codigo: 'BR842391045SP',
     remetente: 'Sede MRV - Belo Horizonte',
     destinatario: 'Obra Residencial Spazio',
+    origem: enderecoSede,
+    destino: { cep: '13040-638', rua: 'Rua Orozimbo Maia', numero: '1201', bairro: 'Centro', cidade: 'Campinas', uf: 'SP' },
     cidade: 'Campinas/SP',
     centroCusto: 'CC-4021 · Engenharia',
     chamado: '#INC-20481',
@@ -183,13 +189,15 @@ export const postagens: Postagem[] = [
     fragil: false,
     status: 'em_transito',
     valor: 38.9,
-    data: '28/07/2026',
+    data: '09/09/2026',
     colaborador: 'Ana Ribeiro',
   },
   {
     codigo: 'BR842390932SP',
     remetente: 'Sede MRV - Belo Horizonte',
     destinatario: 'Cartório 3º Ofício',
+    origem: enderecoSede,
+    destino: { cep: '30140-071', rua: 'Rua dos Aimorés', numero: '1000', bairro: 'Boa Viagem', cidade: 'Belo Horizonte', uf: 'MG', complemento: 'Sala 201' },
     cidade: 'Belo Horizonte/MG',
     centroCusto: 'CC-1180 · Jurídico',
     chamado: '#INC-20477',
@@ -207,6 +215,8 @@ export const postagens: Postagem[] = [
     codigo: 'BR842388120SP',
     remetente: 'Sede MRV - Belo Horizonte',
     destinatario: 'Filial Regional Sul',
+    origem: enderecoSede,
+    destino: { cep: '80010-110', rua: 'Rua XV de Novembro', numero: '850', bairro: 'Centro', cidade: 'Curitiba', uf: 'PR' },
     cidade: 'Curitiba/PR',
     centroCusto: 'CC-3302 · Suprimentos',
     chamado: '#INC-20465',
@@ -224,6 +234,8 @@ export const postagens: Postagem[] = [
     codigo: 'BR842401288SP',
     remetente: 'Sede MRV - Belo Horizonte',
     destinatario: 'Prefeitura Municipal',
+    origem: enderecoSede,
+    destino: { cep: '38400-902', rua: 'Av. Anselmo Alves dos Santos', numero: '600', bairro: 'Santa Mônica', cidade: 'Uberlândia', uf: 'MG' },
     cidade: 'Uberlândia/MG',
     centroCusto: 'CC-1180 · Jurídico',
     chamado: '#INC-20502',
@@ -234,13 +246,15 @@ export const postagens: Postagem[] = [
     fragil: false,
     status: 'postado',
     valor: 41.2,
-    data: '28/07/2026',
+    data: '09/09/2026',
     colaborador: 'Ana Ribeiro',
   },
   {
     codigo: 'BR842399471SP',
     remetente: 'Sede MRV - Belo Horizonte',
     destinatario: 'Fornecedor Alvenaria Ltda',
+    origem: enderecoSede,
+    destino: { cep: '74043-010', rua: 'Av. Anhanguera', numero: '5110', bairro: 'Setor Central', cidade: 'Goiânia', uf: 'GO' },
     cidade: 'Goiânia/GO',
     centroCusto: 'CC-3302 · Suprimentos',
     chamado: '#INC-20498',

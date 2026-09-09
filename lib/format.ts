@@ -13,3 +13,11 @@ export function formatPercent(value: number): string {
   const sign = value > 0 ? '+' : ''
   return `${sign}${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
 }
+
+export function formatDateBR(date = new Date()): string {
+  return date.toLocaleDateString('pt-BR')
+}
+
+export function isToday(dateLabel: string, date = new Date()): boolean {
+  return dateLabel === formatDateBR(date)
+}

@@ -16,7 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/status-badge'
 import { useProfile } from '@/components/profile-context'
 import { cn } from '@/lib/utils'
-import { formatBRL, formatNumber, formatPercent } from '@/lib/format'
+import { formatBRL, formatNumber, formatPercent, isToday } from '@/lib/format'
+import { useScrollIntoView } from '@/lib/use-scroll-into-view'
 import {
   kpis,
   postagens,
@@ -36,6 +37,11 @@ const rangeOptions = [
 ] as const
 
 type RangeKey = (typeof rangeOptions)[number]['key']
+
+function formatAddress(address: Postagem['origem']) {
+  const complemento = address.complemento ? `, ${address.complemento}` : ''
+  return `${address.rua}, ${address.numero}${complemento} · ${address.bairro} · ${address.cidade}/${address.uf} · CEP ${address.cep}`
+}
 
 const chartSeries: Record<RangeKey, { mes: string; valor: number }[]> = {
   mes: [
@@ -84,7 +90,9 @@ const chartSeries: Record<RangeKey, { mes: string; valor: number }[]> = {
 export function DashboardView({ onNavigate }: { onNavigate: (k: ModuleKey) => void }) {
   const { role, profile } = useProfile()
   const [range, setRange] = useState<RangeKey>('6meses')
+  const [onlyToday, setOnlyToday] = useState(false)
   const [selectedPostagem, setSelectedPostagem] = useState<Postagem | null>(null)
+  const detailsRef = useScrollIntoView<HTMLDivElement>(Boolean(selectedPostagem), selectedPostagem?.codigo)
 
   const postagensFiltered = useMemo(() => {
     const base =
@@ -94,8 +102,9 @@ export function DashboardView({ onNavigate }: { onNavigate: (k: ModuleKey) => vo
           ? postagens.filter((p) => p.centroCusto.startsWith('CC-'))
           : postagens.filter((p) => p.colaborador === profile.nome)
 
-    return [...base].sort((a, b) => b.data.localeCompare(a.data))
-  }, [role, profile.nome])
+    const scoped = onlyToday ? base.filter((p) => isToday(p.data)) : base
+    return [...scoped].sort((a, b) => b.data.localeCompare(a.data))
+  }, [onlyToday, role, profile.nome])
 
   const malotesFiltered = useMemo(() => {
     if (role === 'admin') return malotes
@@ -274,9 +283,23 @@ export function DashboardView({ onNavigate }: { onNavigate: (k: ModuleKey) => vo
               Postagens recentes
               {role === 'colaborador' && <span className="ml-2 text-xs font-medium text-gray-500">(suas postagens)</span>}
             </CardTitle>
-            <button onClick={() => onNavigate('correios')} className="flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors">
-              Abrir Correios <ArrowRight className="size-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOnlyToday((prev) => !prev)}
+                className={cn(
+                  'rounded-md border px-2 py-1 text-xs font-semibold transition-colors',
+                  onlyToday
+                    ? 'border-green-600 bg-green-50 text-green-700'
+                    : 'border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-700',
+                )}
+              >
+                Envios de hoje
+              </button>
+              <button onClick={() => onNavigate('correios')} className="flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors">
+                Abrir Correios <ArrowRight className="size-3.5" />
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -290,20 +313,28 @@ export function DashboardView({ onNavigate }: { onNavigate: (k: ModuleKey) => vo
                   </tr>
                 </thead>
                 <tbody>
-                  {postagensFiltered.slice(0, 5).map((p) => (
+                  {postagensFiltered.slice(0, 5).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                        {onlyToday ? 'Nenhum envio registrado hoje.' : 'Nenhuma postagem recente.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    postagensFiltered.slice(0, 5).map((p) => (
                     <tr key={p.codigo} className="group border-b border-gray-200 last:border-0 hover:bg-green-50/50 transition-colors" onClick={() => setSelectedPostagem(p)}>
                       <td className="px-5 py-3 font-mono text-xs text-gray-700 group-hover:text-green-600">{p.codigo}</td>
                       <td className="px-5 py-3 text-sm text-gray-600">{p.centroCusto}</td>
                       <td className="px-5 py-3"><StatusBadge status={p.status} /></td>
                       <td className="px-5 py-3 text-right font-semibold text-gray-900">{formatBRL(p.valor)}</td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
             {selectedPostagem && (
-              <div className="border-t border-gray-200 bg-slate-50 p-4">
+              <div ref={detailsRef} className="border-t border-gray-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Detalhes da postagem</p>
@@ -313,13 +344,13 @@ export function DashboardView({ onNavigate }: { onNavigate: (k: ModuleKey) => vo
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-md border border-border bg-white p-3 text-sm">
-                    <p className="text-muted-foreground">Remetente</p>
-                    <p className="mt-1 font-medium text-foreground">{selectedPostagem.remetente}</p>
+                  <div className="rounded-md border border-border bg-white p-3 text-sm sm:col-span-2">
+                    <p className="text-muted-foreground">Origem · {selectedPostagem.remetente}</p>
+                    <p className="mt-1 font-medium text-foreground">{formatAddress(selectedPostagem.origem)}</p>
                   </div>
-                  <div className="rounded-md border border-border bg-white p-3 text-sm">
-                    <p className="text-muted-foreground">Destinatário</p>
-                    <p className="mt-1 font-medium text-foreground">{selectedPostagem.destinatario}</p>
+                  <div className="rounded-md border border-border bg-white p-3 text-sm sm:col-span-2">
+                    <p className="text-muted-foreground">Destino · {selectedPostagem.destinatario}</p>
+                    <p className="mt-1 font-medium text-foreground">{formatAddress(selectedPostagem.destino)}</p>
                   </div>
                   <div className="rounded-md border border-border bg-white p-3 text-sm">
                     <p className="text-muted-foreground">Serviço</p>

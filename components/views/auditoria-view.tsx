@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SearchField } from '@/components/ui/search-field'
 import { auditoria } from '@/lib/mock-data'
 
 export function AuditoriaView() {
@@ -36,14 +37,12 @@ export function AuditoriaView() {
         </CardContent>
       </Card>
 
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
+      <div className="max-w-sm">
+        <SearchField
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar por usuário, ação ou entidade"
-          className="h-9 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
