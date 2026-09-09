@@ -39,15 +39,15 @@ function downloadCentroCustoReport(centro: CentroCusto) {
   relatedPostagens.forEach((p) => {
     rows.push([
       'Postagem',
-      p.id,
+      p.codigo,
       p.remetente,
       p.destinatario,
       formatBRL(p.valor),
-      '',
+      p.pesoKg.toFixed(1),
       p.chamado ?? '',
       p.status || '',
       p.data || '',
-      p.rastreio || '',
+      p.codigo,
     ])
   })
 

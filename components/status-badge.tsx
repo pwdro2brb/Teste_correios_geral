@@ -11,12 +11,18 @@ const MAP: Record<string, { label: string; variant: Variant }> = {
   // malotes
   aguardando: { label: 'Aguardando coleta', variant: 'secondary' },
   aguardando_coleta: { label: 'Aguardando coleta', variant: 'secondary' },
+  aguardando_coleta_coleta: { label: 'Aguardando coleta', variant: 'secondary' },
   // percursos
   pendente: { label: 'Pendente', variant: 'warning' },
   aprovado: { label: 'Aprovado', variant: 'success' },
   reprovado: { label: 'Reprovado', variant: 'danger' },
   suspenso: { label: 'Suspenso', variant: 'outline' },
   cancelado: { label: 'Cancelado', variant: 'danger' },
+  // notificações e auditoria extras
+  ativo: { label: 'Ativo', variant: 'success' },
+  suspenso_geral: { label: 'Suspenso', variant: 'outline' },
+  lida: { label: 'Lida', variant: 'success' },
+  nao_lida: { label: 'Não lida', variant: 'warning' },
 }
 
 export function StatusBadge({ status }: { status: string }) {

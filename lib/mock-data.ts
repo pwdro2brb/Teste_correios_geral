@@ -311,7 +311,7 @@ export const malotes: Malote[] = [
     rota: 'Regional SP → Obra Spazio',
     origem: 'São Paulo/SP',
     destino: 'Campinas/SP',
-    status: 'aguardando_coleta_coleta',
+    status: 'aguardando_coleta',
     responsavel: 'Fernanda Lopes',
     centroCusto: 'CC-4021 · Engenharia',
     chamado: '#INC-20510',

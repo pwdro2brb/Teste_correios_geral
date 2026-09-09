@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import { CheckCircle2, Route, AlertTriangle, MessageSquare } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,15 @@ const CONFIG = {
 } as const
 
 export function NotificacoesView() {
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+
+  const visibleNotifications = useMemo(() => {
+    if (filter === 'unread') return notificacoes.filter((item) => !item.lida)
+    return notificacoes
+  }, [filter])
+
+  const unreadCount = notificacoes.filter((item) => !item.lida).length
+
   return (
     <div className="flex flex-col gap-6">
       <Card className="border-primary/30 bg-accent/40">
@@ -43,35 +53,58 @@ export function NotificacoesView() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
           <CardTitle>Central de notificações</CardTitle>
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/20 p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setFilter('all')}
+              className={cn('rounded px-2 py-1', filter === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
+            >
+              Todas
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('unread')}
+              className={cn('rounded px-2 py-1', filter === 'unread' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
+            >
+              Não lidas ({unreadCount})
+            </button>
+          </div>
         </CardHeader>
+
         <CardContent className="flex flex-col gap-3">
-          {notificacoes.map((n) => {
-            const cfg = CONFIG[n.tipo]
-            const Icon = cfg.icon
-            return (
-              <div
-                key={n.id}
-                className={cn(
-                  'flex items-start gap-3 rounded-md border border-border p-4',
-                  !n.lida && 'bg-muted/40',
-                )}
-              >
-                <span className={cn('flex size-9 items-center justify-center rounded-md', cfg.tone)}>
-                  <Icon className="size-4.5" />
-                </span>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{n.titulo}</p>
-                    {!n.lida && <span className="size-2 rounded-full bg-primary" aria-label="Não lida" />}
+          {visibleNotifications.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/20 p-5 text-center text-sm text-muted-foreground">
+              Nenhuma notificação para este filtro.
+            </div>
+          ) : (
+            visibleNotifications.map((n) => {
+              const cfg = CONFIG[n.tipo]
+              const Icon = cfg.icon
+              return (
+                <div
+                  key={n.id}
+                  className={cn(
+                    'flex items-start gap-3 rounded-md border border-border p-4',
+                    !n.lida && 'bg-muted/40',
+                  )}
+                >
+                  <span className={cn('flex size-9 items-center justify-center rounded-md', cfg.tone)}>
+                    <Icon className="size-4.5" />
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground">{n.titulo}</p>
+                      {!n.lida && <span className="size-2 rounded-full bg-primary" aria-label="Não lida" />}
+                    </div>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{n.descricao}</p>
                   </div>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{n.descricao}</p>
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">{n.tempo}</span>
                 </div>
-                <span className="whitespace-nowrap text-xs text-muted-foreground">{n.tempo}</span>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
-import { Plus, Check, X, Route, ShieldAlert } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Check, X, Route, ShieldAlert, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/status-badge'
@@ -10,8 +11,20 @@ import { useProfile } from '@/components/profile-context'
 
 export function PercursosView() {
   const { role } = useProfile()
+  const [search, setSearch] = useState('')
   const podeAprovar = role === 'admin' || role === 'operador'
   const podeSolicitar = role === 'colaborador' || podeAprovar
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return percursos
+
+    return percursos.filter((item) =>
+      [item.id, item.solicitante, item.origem, item.destino, item.frequencia].some((value) =>
+        value.toLowerCase().includes(query),
+      ),
+    )
+  }, [search])
 
   return (
     <div className="flex flex-col gap-6">
@@ -34,6 +47,17 @@ export function PercursosView() {
         )}
       </div>
 
+      <div className="relative max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar por rota, solicitante ou ID"
+          className="h-9 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -50,46 +74,54 @@ export function PercursosView() {
                 </tr>
               </thead>
               <tbody>
-                {percursos.map((p) => (
-                  <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/50">
-                    <td className="px-5 py-3 font-mono text-xs text-foreground">{p.id}</td>
-                    <td className="px-5 py-3 text-foreground">{p.solicitante}</td>
-                    <td className="px-5 py-3">
-                      <span className="flex items-center gap-1.5 text-foreground">
-                        <Route className="size-3.5 text-muted-foreground" />
-                        {p.origem} → {p.destino}
-                      </span>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={podeAprovar ? 7 : 6} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      Nenhum percurso corresponde ao filtro atual.
                     </td>
-                    <td className="px-5 py-3 text-muted-foreground">{p.frequencia}</td>
-                    <td className="px-5 py-3 font-medium text-foreground">
-                      {formatBRL(p.custoEstimado)}
-                    </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={p.status} />
-                    </td>
-                    {podeAprovar && (
-                      <td className="px-5 py-3">
-                        <div className="flex flex-wrap justify-end gap-1.5">
-                          {p.status === 'pendente' && (
-                            <>
-                              <Button size="sm" variant="outline" className="h-8 px-2">
-                                <Check className="size-4" /> Aprovar
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-8 px-2 text-destructive">
-                                <X className="size-4" /> Reprovar
-                              </Button>
-                            </>
-                          )}
-                          {p.status === 'aprovado' && (
-                            <Button size="sm" variant="outline" className="h-8 px-2">
-                              Suspender
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    )}
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((p) => (
+                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/50">
+                      <td className="px-5 py-3 font-mono text-xs text-foreground">{p.id}</td>
+                      <td className="px-5 py-3 text-foreground">{p.solicitante}</td>
+                      <td className="px-5 py-3">
+                        <span className="flex items-center gap-1.5 text-foreground">
+                          <Route className="size-3.5 text-muted-foreground" />
+                          {p.origem} → {p.destino}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-muted-foreground">{p.frequencia}</td>
+                      <td className="px-5 py-3 font-medium text-foreground">
+                        {formatBRL(p.custoEstimado)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge status={p.status} />
+                      </td>
+                      {podeAprovar && (
+                        <td className="px-5 py-3">
+                          <div className="flex flex-wrap justify-end gap-1.5">
+                            {p.status === 'pendente' && (
+                              <>
+                                <Button size="sm" variant="outline" className="h-8 px-2">
+                                  <Check className="size-4" /> Aprovar
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-8 px-2 text-destructive">
+                                  <X className="size-4" /> Reprovar
+                                </Button>
+                              </>
+                            )}
+                            {p.status === 'aprovado' && (
+                              <Button size="sm" variant="outline" className="h-8 px-2">
+                                Suspender
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
