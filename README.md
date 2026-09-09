@@ -1,57 +1,94 @@
-# 📦 Logistics Hub - Gestão de Encomendas, Rastreios & Rateio
+# Logistics Hub
 
-> Plataforma web centralizada para automação logística, emissão de etiquetas, acompanhamento de rastreios em tempo real e rateio financeiro por Centro de Custo.
+Aplicacao interna para gerenciamento de postagens, malotes, percursos e governanca de custos logisticos por centro de custo.
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge)
+## Estado atual
 
----
+O projeto apresenta fluxos simulados no cliente para demonstracao de interface e regras de visualizacao. A integracao com a API dos Correios, a emissao real de etiquetas e DC-e, persistencia de dados, importacao de centros de custo e notificacoes externas ainda nao estao implementadas.
 
-## 🎯 O Problema & A Solução
+## Tecnologias
 
-Em operações corporativas de grande escala, a gestão de correspondências e malotes frequentemente sofre com falta de visibilidade nos gastos por centro de custo, lentidão na criação de etiquetas e consultas manuais de status de entrega.
+- Next.js 16 com App Router
+- React 19 e TypeScript
+- Tailwind CSS 4
+- shadcn/ui, configurado com o estilo `base-nova`
+- Lucide React para icones
 
-O **Logistics Hub** resolve esse gargalo fornecendo:
-* **Geração de Etiquetas e Pré-Postagem:** Fluxo simplificado para solicitação e geração de etiquetas via integração direta com a **API dos Correios**.
-* **Rateio Financeiro Automático:** Associação direta de cada envio ao seu respectivo Centro de Custo (CC), facilitando a prestação de contas contábil.
-* **Notificações Ativas:** Monitoramento de status de entrega integrado com webhooks do **Microsoft Teams** para avisos automáticos de movimentação e entrega.
-* **Painel Executivo:** Dashboard com métricas consolidadas de volume, gastos e prazos médios de entrega.
+## Modulos
 
----
+- Painel geral: indicadores, custos e postagens recentes.
+- Correios: criacao simulada de postagens, contatos salvos, consulta e detalhe de rastreio.
+- Malotes: registro e acompanhamento de malotes por rota.
+- Percursos: consulta e aprovacao de percursos.
+- Centros de custo: rateio e relatorios operacionais.
+- Notificacoes: avisos internos.
+- Auditoria: historico de acoes do sistema.
 
-## 👥 Controle de Acesso e Papéis (RBAC)
+## Papeis de acesso
 
-O sistema implementa regras de visualização baseadas no perfil do usuário via `ProfileContext`:
+| Papel | Responsabilidade |
+| --- | --- |
+| Colaborador | Acessa seus proprios registros e solicitacoes. |
+| Operador logistico | Opera malotes e acompanha demandas operacionais autorizadas. |
+| Administrador | Acessa os dados consolidados, relatorios e cadastros corporativos. |
 
-| Papel | Permissões de Acesso |
-| :--- | :--- |
-| **Colaborador** | Solicita envios e acompanha apenas seus próprios registros e malotes. |
-| **Operador Logístico** | Gerencia solicitações de todas as áreas, emite etiquetas e atualiza status. |
-| **Administrador** | Acesso completo a relatórios financeiros, rateios consolidados e cadastros. |
+As regras de acesso ficam em [lib/roles.ts](lib/roles.ts) e o perfil ativo e fornecido por `ProfileProvider`.
 
----
+## Estrutura
 
-## 🛠️ Tecnologias Utilizadas
+```text
+app/                 Rotas, layout e estilos globais
+components/          Shell, navegacao, componentes de UI e visoes por modulo
+components/views/    Telas funcionais de cada modulo
+lib/                 Dados mockados, papeis, formatacao e utilitarios
+public/              Arquivos estaticos
+```
 
-* **Framework:** [Next.js](https://nextjs.org/) (App Router)
-* **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
-* **Estilização:** [Tailwind CSS](https://tailwindcss.com/) com paleta moderna baseada em variáveis CSS (`OKLCH`)
-* **Componentes:** [shadcn/ui](https://ui.shadcn.com/) & [Lucide Icons](https://lucide.dev/)
-* **Integrações (Planejadas/Em Desenvolvimento):** API Correios REST & Microsoft Teams Incoming Webhooks
+## Executar localmente
 
----
+### Pre-requisitos
 
-## 🚀 Como Executar o Projeto Localmente
+- Node.js 20.9 ou superior
+- pnpm 9 ou superior, recomendado pelo lockfile do projeto
 
-### Pré-requisitos
-* [Node.js](https://nodejs.org/) (versão 18 ou superior)
-* [pnpm](https://pnpm.io/) ou `npm`
+### Comandos
 
-### Passo a Passo
+```bash
+pnpm install
+pnpm dev
+```
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [https://github.com/pwdro2brb/Teste_correios_geral.git](https://github.com/pwdro2brb/Teste_correios_geral.git)
-   cd Teste_correios_geral
+A aplicacao ficara disponivel em `http://localhost:3000`.
+
+Para gerar uma build de producao:
+
+```bash
+pnpm build
+pnpm start
+```
+
+Tambem e possivel usar npm quando necessario:
+
+```bash
+npm install
+npm run dev
+```
+
+## Qualidade
+
+```bash
+pnpm lint
+pnpm build
+```
+
+O ambiente precisa ter Node.js e o gerenciador de pacotes disponiveis no `PATH` para executar esses comandos.
+
+## Requisitos e evolucao
+
+O plano funcional das abas Malotes, Percursos, Notificacoes, Centros de custo e Auditoria esta em [REQUIREMENTS.md](REQUIREMENTS.md). O documento tambem registra regras de permissao, integracoes futuras e a ordem recomendada de implementacao.
+
+## Seguranca e integracoes futuras
+
+- Credenciais de integracoes devem permanecer somente no servidor e em variaveis de ambiente.
+- Dados sensiveis nao devem ser mantidos em mocks de cliente ou versionados no repositorio.
+- Integracoes com Correios e Microsoft Teams devem ser ativadas somente apos autenticacao, autorizacao corporativa e trilha de auditoria.
