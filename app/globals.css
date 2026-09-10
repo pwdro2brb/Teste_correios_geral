@@ -169,6 +169,19 @@
     background-color: #fafaf9 !important;
     color: #333333 !important;
   }
+  /* Pointer cursor for anything clickable */
+  button:not(:disabled),
+  a,
+  select,
+  [role='button'],
+  [onclick],
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Force light theme background */

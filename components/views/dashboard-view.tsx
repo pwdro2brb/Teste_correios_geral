@@ -321,7 +321,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (k: ModuleKey) => vo
                     </tr>
                   ) : (
                     postagensFiltered.slice(0, 5).map((p) => (
-                    <tr key={p.codigo} className="group border-b border-gray-200 last:border-0 hover:bg-green-50/50 transition-colors" onClick={() => setSelectedPostagem(p)}>
+                    <tr key={p.codigo} className="group cursor-pointer border-b border-gray-200 last:border-0 hover:bg-green-50/50 transition-colors" onClick={() => setSelectedPostagem(p)}>
                       <td className="px-5 py-3 font-mono text-xs text-gray-700 group-hover:text-green-600">{p.codigo}</td>
                       <td className="px-5 py-3 text-sm text-gray-600">{p.centroCusto}</td>
                       <td className="px-5 py-3"><StatusBadge status={p.status} /></td>
