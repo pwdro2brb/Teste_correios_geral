@@ -15,6 +15,7 @@ export interface RoleProfile {
   cargo: string
   descricao: string
   iniciais: string
+  regional: string
   modules: ModuleKey[]
 }
 
@@ -25,6 +26,7 @@ export const ROLES: Record<Role, RoleProfile> = {
     cargo: 'Colaboradora',
     descricao: 'Cria postagens, acompanha rastreios e solicita novos percursos.',
     iniciais: 'AR',
+    regional: 'BH',
     modules: ['dashboard', 'correios', 'malotes', 'percursos', 'notificacoes'],
   },
   operador: {
@@ -33,6 +35,7 @@ export const ROLES: Record<Role, RoleProfile> = {
     cargo: 'Operador Logístico',
     descricao: 'Processa malotes, registra eventos e gerencia rotas ativas.',
     iniciais: 'CM',
+    regional: 'BH',
     modules: [
       'dashboard',
       'correios',
@@ -48,6 +51,7 @@ export const ROLES: Record<Role, RoleProfile> = {
     cargo: 'Administradora',
     descricao: 'Governança total, aprovações, rateios e auditoria completa.',
     iniciais: 'BA',
+    regional: 'BH',
     modules: [
       'dashboard',
       'correios',

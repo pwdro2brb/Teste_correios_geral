@@ -1,13 +1,19 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
-import { Plus, QrCode, ShieldAlert } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Plus, QrCode, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/status-badge'
+import { Pagination } from '@/components/ui/pagination'
+import { LoadingState, ErrorState } from '@/components/ui/state-views'
 import { formatBRL } from '@/lib/format'
 import { useScrollIntoView } from '@/lib/use-scroll-into-view'
-import { type Malote, maloteRotas, malotes } from '@/lib/mock-data'
+import { usePagination } from '@/lib/use-pagination'
+import { useAsyncData } from '@/lib/use-async-data'
+import { fetchMalotes } from '@/lib/mock-api'
+import { type Malote, maloteRotas } from '@/lib/mock-data'
+import { useProfile } from '@/components/profile-context'
 
 const initialMaloteForm = {
   rotaId: maloteRotas[0]?.id ?? '',
@@ -20,13 +26,25 @@ const initialMaloteForm = {
 }
 
 export function MalotesView() {
-  const [malotesState, setMalotesState] = useState<Malote[]>(malotes)
+  const { role, profile } = useProfile()
+  const { data: malotesData, loading, error, retry } = useAsyncData(fetchMalotes)
+  const [malotesState, setMalotesState] = useState<Malote[]>([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(initialMaloteForm)
   const formRef = useScrollIntoView<HTMLDivElement>(showForm)
+  const malotesPagination = usePagination(malotesState, 4)
 
-  const activeRoutes = maloteRotas.filter((rota) => rota.ativo)
+  useEffect(() => {
+    if (malotesData) setMalotesState(malotesData)
+  }, [malotesData])
+
+  const regionalRoutes = maloteRotas.filter((rota) => role === 'admin' || rota.regional === profile.regional)
+  const activeRoutes = regionalRoutes.filter((rota) => rota.ativo)
   const selectedRoute = maloteRotas.find((rota) => rota.id === form.rotaId) ?? maloteRotas[0]
+
+  function podeGerenciar(malote: Malote) {
+    return role === 'admin' || role === 'operador' || malote.solicitante === profile.nome
+  }
 
   function handleInputChange(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -70,7 +88,7 @@ export function MalotesView() {
                 status === 'em_transito'
                   ? 'Malote em trânsito'
                   : status === 'entregue'
-                    ? 'Malote entregue'
+                    ? 'Malote entregue - aguardando confirmação'
                     : 'Aguardando coleta',
               atualizadoEm: new Date().toLocaleDateString('pt-BR'),
             }
@@ -78,6 +96,19 @@ export function MalotesView() {
       ),
     )
   }
+
+  function concluirMalote(id: string) {
+    setMalotesState((prev) =>
+      prev.map((malote) =>
+        malote.id === id
+          ? { ...malote, concluido: true, ultimoEvento: 'Malote concluído pela administração', atualizadoEm: new Date().toLocaleDateString('pt-BR') }
+          : malote,
+      ),
+    )
+  }
+
+  if (loading) return <LoadingState label="Carregando malotes..." />
+  if (error) return <ErrorState message={error} onRetry={retry} />
 
   return (
     <div className="flex flex-col gap-6">
@@ -199,7 +230,6 @@ export function MalotesView() {
               <CardTitle>Malotes em controle</CardTitle>
               <p className="text-sm text-muted-foreground">Acompanhamento por status, responsável e confirmação de entrega.</p>
             </div>
-            <StatusBadge status="aguardando_coleta" />
           </CardHeader>
           <CardContent className="space-y-4 p-5">
             <div className="grid gap-3 sm:grid-cols-3">
@@ -232,8 +262,12 @@ export function MalotesView() {
         <Card>
           <CardContent className="p-5">
             <p className="text-sm font-semibold text-foreground">Rotas fixas de malote</p>
+            <p className="text-xs text-muted-foreground">{role === 'admin' ? 'Todas as regionais' : `Regional ${profile.regional}`}</p>
             <div className="mt-4 space-y-3">
-              {maloteRotas.filter((rota) => rota.ativo).map((rota) => (
+              {activeRoutes.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma rota ativa para esta regional.</p>
+              )}
+              {activeRoutes.map((rota) => (
                 <div key={rota.id} className="flex items-center justify-between rounded-lg border border-border bg-background p-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">{rota.origem} → {rota.destino}</p>
@@ -248,7 +282,7 @@ export function MalotesView() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {malotesState.map((m) => (
+        {malotesPagination.paginated.map((m) => (
           <Card key={m.id}>
             <CardHeader className="flex-row items-center justify-between">
               <div>
@@ -274,26 +308,50 @@ export function MalotesView() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {m.status === 'aguardando_coleta' && (
-                  <Button size="sm" onClick={() => updateMaloteStatus(m.id, 'em_transito')}>
-                    Iniciar trânsito
-                  </Button>
-                )}
-                {m.status === 'em_transito' && (
-                  <>
-                    <Button size="sm" onClick={() => updateMaloteStatus(m.id, 'entregue')}>Marcar entregue</Button>
-                    <Button size="sm" variant="outline" onClick={() => updateMaloteStatus(m.id, 'aguardando_coleta')}>Reabrir</Button>
-                  </>
-                )}
-                {m.status === 'entregue' && (
-                  <Button size="sm" variant="outline" onClick={() => updateMaloteStatus(m.id, 'em_transito')}>Voltar para trânsito</Button>
-                )}
-              </div>
+              {podeGerenciar(m) ? (
+                <div className="flex flex-wrap gap-2">
+                  {m.status === 'aguardando_coleta' && (
+                    <Button size="sm" onClick={() => updateMaloteStatus(m.id, 'em_transito')}>
+                      Iniciar trânsito
+                    </Button>
+                  )}
+                  {m.status === 'em_transito' && (
+                    <>
+                      <Button size="sm" onClick={() => updateMaloteStatus(m.id, 'entregue')}>Marcar entregue</Button>
+                      <Button size="sm" variant="outline" onClick={() => updateMaloteStatus(m.id, 'aguardando_coleta')}>Reabrir</Button>
+                    </>
+                  )}
+                  {m.status === 'entregue' && !m.concluido && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => updateMaloteStatus(m.id, 'em_transito')}>Voltar para trânsito</Button>
+                      {role === 'admin' && (
+                        <Button size="sm" onClick={() => concluirMalote(m.id)}>
+                          <CheckCircle2 className="size-4" /> Concluir
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {m.status === 'entregue' && m.concluido && (
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+                      <CheckCircle2 className="size-4" /> Concluído pela administração
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Somente o solicitante ou a administração podem alterar o status deste malote.</p>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <Pagination
+        page={malotesPagination.page}
+        pageCount={malotesPagination.pageCount}
+        totalItems={malotesPagination.totalItems}
+        pageSize={malotesPagination.pageSize}
+        onPageChange={malotesPagination.goToPage}
+      />
     </div>
   )
 }

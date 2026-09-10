@@ -276,6 +276,7 @@ export interface Malote {
   origem: string
   destino: string
   status: 'aguardando_coleta' | 'em_transito' | 'entregue'
+  concluido?: boolean
   responsavel: string
   centroCusto: string
   chamado: string
@@ -292,14 +293,15 @@ export interface MaloteRota {
   id: string
   origem: string
   destino: string
+  regional: string
   ativo: boolean
 }
 
 export const maloteRotas: MaloteRota[] = [
-  { id: 'R1', origem: 'Sede BH', destino: 'Regional SP', ativo: true },
-  { id: 'R2', origem: 'Regional SP', destino: 'Obra Campinas/SP', ativo: true },
-  { id: 'R3', origem: 'Sede BH', destino: 'Obra Contagem/MG', ativo: true },
-  { id: 'R4', origem: 'Regional Sul', destino: 'Sede BH', ativo: false },
+  { id: 'R1', origem: 'Sede BH', destino: 'Regional SP', regional: 'BH', ativo: true },
+  { id: 'R2', origem: 'Regional SP', destino: 'Obra Campinas/SP', regional: 'SP', ativo: true },
+  { id: 'R3', origem: 'Sede BH', destino: 'Obra Contagem/MG', regional: 'BH', ativo: true },
+  { id: 'R4', origem: 'Regional Sul', destino: 'Sede BH', regional: 'Sul', ativo: false },
 ]
 
 export const malotes: Malote[] = [
@@ -512,7 +514,7 @@ export interface AuditoriaEvento {
   acao: string
   entidade: string
   data: string
-  ip: string
+  detalhe: string
 }
 
 export const auditoria: AuditoriaEvento[] = [
@@ -523,7 +525,7 @@ export const auditoria: AuditoriaEvento[] = [
     acao: 'Aprovou percurso',
     entidade: 'PER-112',
     data: '28/07/2026 10:12',
-    ip: '10.24.8.14',
+    detalhe: 'Percurso PER-112 (Regional SP → Obra Jardim Sul - Sorocaba/SP) aprovado com custo estimado de R$ 890,00.',
   },
   {
     id: 'A2',
@@ -532,7 +534,7 @@ export const auditoria: AuditoriaEvento[] = [
     acao: 'Registrou evento de malote',
     entidade: 'MAL-0912',
     data: '28/07/2026 09:42',
-    ip: '10.24.8.32',
+    detalhe: 'Malote MAL-0912 (Sede BH → Regional SP) teve o status atualizado para "Em trânsito" após coleta na origem.',
   },
   {
     id: 'A3',
@@ -541,7 +543,7 @@ export const auditoria: AuditoriaEvento[] = [
     acao: 'Gerou postagem',
     entidade: 'BR842401288SP',
     data: '28/07/2026 08:57',
-    ip: '10.24.9.05',
+    detalhe: 'Postagem BR842401288SP criada para Prefeitura Municipal (Uberlândia/MG) via serviço PAC, centro de custo CC-1180.',
   },
   {
     id: 'A4',
@@ -550,7 +552,7 @@ export const auditoria: AuditoriaEvento[] = [
     acao: 'Reprovou percurso',
     entidade: 'PER-109',
     data: '20/07/2026 14:33',
-    ip: '10.24.8.14',
+    detalhe: 'Percurso PER-109 (Sede BH → Cartório Central - Vitória/ES) reprovado por custo estimado acima do orçamento do centro.',
   },
 ]
 

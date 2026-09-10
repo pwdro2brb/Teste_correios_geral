@@ -43,10 +43,10 @@ export function NotificacoesView() {
           </span>
           <div>
             <p className="text-sm font-medium text-foreground">
-              Integração com Microsoft Teams ativa
+              Integração com Microsoft Teams (em análise)
             </p>
             <p className="text-sm text-muted-foreground">
-              Solicitações, entregas e ocorrências são notificadas automaticamente nos canais das equipes.
+              A integração ainda não está disponível — depende de acesso ao ambiente corporativo do Teams. Por enquanto, as notificações aparecem somente aqui.
             </p>
           </div>
         </CardContent>

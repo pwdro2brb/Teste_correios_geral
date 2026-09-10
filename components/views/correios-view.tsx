@@ -1,15 +1,21 @@
 'use client'
 
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Plus, MapPin, Link2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SearchField } from '@/components/ui/search-field'
 import { StatusBadge } from '@/components/status-badge'
+import { Pagination } from '@/components/ui/pagination'
+import { LoadingState, ErrorState } from '@/components/ui/state-views'
 import { useProfile } from '@/components/profile-context'
 import { formatBRL, formatDateBR, isToday } from '@/lib/format'
 import { useScrollIntoView } from '@/lib/use-scroll-into-view'
-import { ContatoSalvo, Postagem, contatosSalvos, postagens, servicosCorreios } from '@/lib/mock-data'
+import { usePagination } from '@/lib/use-pagination'
+import { useAsyncData } from '@/lib/use-async-data'
+import { fetchPostagens } from '@/lib/mock-api'
+import { useCostCenters } from '@/lib/cost-centers-context'
+import { ContatoSalvo, Postagem, contatosSalvos, servicosCorreios } from '@/lib/mock-data'
 
 type FormState = {
   remetenteNome: string
@@ -73,14 +79,7 @@ const initialFormState: FormState = {
   telefoneDestinatario: '',
 }
 
-const centrosCustoList = [
-  'CC-4021 · Engenharia',
-  'CC-1180 · Jurídico',
-  'CC-3302 · Suprimentos',
-  'CC-2205 · Administrativo',
-  'CC-5014 · Vendas',
-  'CC-7009 · Operações',
-]
+const centrosCustoListFallback: string[] = []
 
 function formatAddress(address: Postagem['origem']) {
   const complemento = address.complemento ? `, ${address.complemento}` : ''
@@ -89,7 +88,10 @@ function formatAddress(address: Postagem['origem']) {
 
 export function CorreiosView() {
   const { profile, role } = useProfile()
-  const [postagensState, setPostagensState] = useState<Postagem[]>(postagens)
+  const { formatOptions } = useCostCenters()
+  const centrosCustoList = formatOptions().length > 0 ? formatOptions() : centrosCustoListFallback
+  const { data: postagensData, loading, error, retry } = useAsyncData(fetchPostagens)
+  const [postagensState, setPostagensState] = useState<Postagem[]>([])
   const [contatosState, setContatosState] = useState<ContatoSalvo[]>(contatosSalvos)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
@@ -104,6 +106,10 @@ export function CorreiosView() {
   const contactFormRef = useScrollIntoView<HTMLDivElement>(Boolean(editingContact), editingContact?.id)
   const detailsRef = useScrollIntoView<HTMLDivElement>(Boolean(selectedPost), selectedPost?.codigo)
 
+  useEffect(() => {
+    if (postagensData) setPostagensState(postagensData)
+  }, [postagensData])
+
   const filteredPostagens = useMemo(() => {
     const query = search.trim().toLowerCase()
 
@@ -114,6 +120,8 @@ export function CorreiosView() {
       return haystack.includes(query)
     })
   }, [onlyToday, postagensState, search])
+
+  const postagensPagination = usePagination(filteredPostagens, 8)
 
   const total = postagensState.reduce((sum, post) => sum + post.valor, 0)
   const selectedService = servicosCorreios.find((servico) => servico.tipo === form.servico) ?? servicosCorreios[0]
@@ -259,6 +267,9 @@ export function CorreiosView() {
     setForm(initialFormState)
     setShowForm(false)
   }
+
+  if (loading) return <LoadingState label="Carregando postagens..." />
+  if (error) return <ErrorState message={error} onRetry={retry} />
 
   return (
     <div className="flex flex-col gap-6">
@@ -825,7 +836,7 @@ export function CorreiosView() {
                     </td>
                   </tr>
                 ) : (
-                  filteredPostagens.map((post) => (
+                  postagensPagination.paginated.map((post) => (
                     <tr key={post.codigo} onClick={() => setSelectedPost(post)} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50">
                       <td className="px-5 py-3">
                         <span className="font-mono text-xs text-foreground">{post.codigo}</span>
@@ -847,6 +858,14 @@ export function CorreiosView() {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            page={postagensPagination.page}
+            pageCount={postagensPagination.pageCount}
+            totalItems={postagensPagination.totalItems}
+            pageSize={postagensPagination.pageSize}
+            onPageChange={postagensPagination.goToPage}
+          />
 
           {selectedPost && (
             <div ref={detailsRef} className="border-t border-border bg-slate-50 p-4">
