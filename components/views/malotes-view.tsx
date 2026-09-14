@@ -31,16 +31,25 @@ export function MalotesView() {
   const [malotesState, setMalotesState] = useState<Malote[]>([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(initialMaloteForm)
+  const [formError, setFormError] = useState('')
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const formRef = useScrollIntoView<HTMLDivElement>(showForm)
+  const formErrorRef = useScrollIntoView<HTMLParagraphElement>(Boolean(formError), formError)
   const malotesPagination = usePagination(malotesState, 4)
 
   useEffect(() => {
     if (malotesData) setMalotesState(malotesData)
   }, [malotesData])
 
+  useEffect(() => {
+    if (!feedback) return
+    const timeout = setTimeout(() => setFeedback(null), 4000)
+    return () => clearTimeout(timeout)
+  }, [feedback])
+
   const regionalRoutes = maloteRotas.filter((rota) => role === 'admin' || rota.regional === profile.regional)
   const activeRoutes = regionalRoutes.filter((rota) => rota.ativo)
-  const selectedRoute = maloteRotas.find((rota) => rota.id === form.rotaId) ?? maloteRotas[0]
+  const selectedRoute = activeRoutes.find((rota) => rota.id === form.rotaId) ?? activeRoutes[0]
 
   function podeGerenciar(malote: Malote) {
     return role === 'admin' || role === 'operador' || malote.solicitante === profile.nome
@@ -48,11 +57,23 @@ export function MalotesView() {
 
   function handleInputChange(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
+    if (formError) setFormError('')
+    if (feedback?.type === 'error') setFeedback(null)
   }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!selectedRoute) return
+    const requiredFields = [form.rotaId, form.quemEnviou, form.quemRecebe, form.chamado, form.conteudo, form.peso, form.centroCusto]
+    if (!selectedRoute || requiredFields.some((value) => !value.trim()) || Number(form.peso) <= 0) {
+      const message = Number(form.peso) <= 0 && form.peso.trim()
+        ? 'O peso deve ser maior que zero.'
+        : 'Preencha todos os campos obrigatórios (*) antes de registrar o malote.'
+      setFormError(message)
+      setFeedback({ type: 'error', message: 'Malote não criado. Revise os campos destacados.' })
+      return
+    }
+
+    setFormError('')
 
     const newMalote: Malote = {
       id: `MAL-${Date.now().toString().slice(-4)}`,
@@ -69,10 +90,11 @@ export function MalotesView() {
       confirmacao: `QR-${Date.now().toString().slice(-4)}`,
       ultimoEvento: 'Registrado e aguardando coleta',
       atualizadoEm: new Date().toLocaleDateString('pt-BR'),
-      solicitante: 'Usuário atual',
+      solicitante: profile.nome,
     }
 
     setMalotesState((prev) => [newMalote, ...prev])
+    setFeedback({ type: 'success', message: 'Malote registrado com sucesso.' })
     setForm(initialMaloteForm)
     setShowForm(false)
   }
@@ -112,6 +134,18 @@ export function MalotesView() {
 
   return (
     <div className="flex flex-col gap-6">
+      {feedback && (
+        <div
+          role="status"
+          className={`fixed right-4 top-20 z-50 max-w-sm rounded-md border px-4 py-3 text-sm font-medium shadow-lg ${
+            feedback.type === 'success'
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-red-300 bg-red-50 text-red-800'
+          }`}
+        >
+          {feedback.message}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="rounded-md border border-dashed border-border bg-accent/40 px-3 py-2 text-xs text-accent-foreground">
           <span className="inline-flex items-center gap-1.5">
@@ -136,16 +170,22 @@ export function MalotesView() {
               </Button>
             </div>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-4" noValidate onSubmit={handleSubmit}>
+              {formError && (
+                <p ref={formErrorRef} role="alert" className="relative z-10 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {formError}
+                </p>
+              )}
               <div className="grid gap-4 lg:grid-cols-2">
                 <label className="space-y-1 text-sm">
-                  Rota de malote
+                  Rota de malote *
                   <select
-                    value={form.rotaId}
+                    value={activeRoutes.some((rota) => rota.id === form.rotaId) ? form.rotaId : activeRoutes[0]?.id ?? ''}
                     onChange={(event) => handleInputChange('rotaId', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   >
-                    {maloteRotas.map((rota) => (
+                    {activeRoutes.map((rota) => (
                       <option key={rota.id} value={rota.id}>
                         {rota.origem} → {rota.destino}
                       </option>
@@ -153,59 +193,65 @@ export function MalotesView() {
                   </select>
                 </label>
                 <label className="space-y-1 text-sm">
-                  Centro de custo
+                  Centro de custo *
                   <input
                     value={form.centroCusto}
                     onChange={(event) => handleInputChange('centroCusto', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-3">
                 <label className="space-y-1 text-sm">
-                  Quem enviou
+                  Quem enviou *
                   <input
                     value={form.quemEnviou}
                     onChange={(event) => handleInputChange('quemEnviou', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  Quem recebe
+                  Quem recebe *
                   <input
                     value={form.quemRecebe}
                     onChange={(event) => handleInputChange('quemRecebe', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  Chamado Agilis
+                  Chamado Agilis *
                   <input
                     value={form.chamado}
                     onChange={(event) => handleInputChange('chamado', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <label className="space-y-1 text-sm">
-                  Conteúdo do malote
+                  Conteúdo do malote *
                   <input
                     value={form.conteudo}
                     onChange={(event) => handleInputChange('conteudo', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  Peso (kg)
+                  Peso (kg) *
                   <input
                     type="number"
                     step="0.1"
                     value={form.peso}
                     onChange={(event) => handleInputChange('peso', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>

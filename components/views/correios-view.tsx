@@ -99,16 +99,27 @@ export function CorreiosView() {
   const [contactSearch, setContactSearch] = useState('')
   const [selectedPost, setSelectedPost] = useState<Postagem | null>(null)
   const [form, setForm] = useState<FormState>(initialFormState)
+  const [formError, setFormError] = useState('')
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [editingContact, setEditingContact] = useState<ContatoSalvo | null>(null)
   const [selectedRemetenteId, setSelectedRemetenteId] = useState('')
   const [selectedDestinatarioId, setSelectedDestinatarioId] = useState('')
+  const [openContactPicker, setOpenContactPicker] = useState<'remetente' | 'destinatario' | null>(null)
+  const [savedContactSearch, setSavedContactSearch] = useState({ remetente: '', destinatario: '' })
   const formRef = useScrollIntoView<HTMLDivElement>(showForm)
+  const formErrorRef = useScrollIntoView<HTMLParagraphElement>(Boolean(formError), formError)
   const contactFormRef = useScrollIntoView<HTMLDivElement>(Boolean(editingContact), editingContact?.id)
   const detailsRef = useScrollIntoView<HTMLDivElement>(Boolean(selectedPost), selectedPost?.codigo)
 
   useEffect(() => {
     if (postagensData) setPostagensState(postagensData)
   }, [postagensData])
+
+  useEffect(() => {
+    if (!feedback) return
+    const timeout = setTimeout(() => setFeedback(null), 4000)
+    return () => clearTimeout(timeout)
+  }, [feedback])
 
   const filteredPostagens = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -137,10 +148,23 @@ export function CorreiosView() {
     })
   }, [contactSearch, contatosState])
 
+  function getSavedContacts(kind: 'remetente' | 'destinatario') {
+    const query = savedContactSearch[kind].trim().toLowerCase()
+    return contatosState.filter((contact) => {
+      if (contact.tipo !== kind) return false
+      if (!query) return true
+      return `${contact.nome} ${contact.endereco.cidade} ${contact.endereco.uf} ${contact.endereco.cep}`.toLowerCase().includes(query)
+    })
+  }
+
   const canEditContact = (contact: ContatoSalvo) => role === 'admin' || contact.escopo === 'pessoal'
 
   function handleInputChange<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [field]: value }))
+    if (field.startsWith('remetente')) setSelectedRemetenteId('')
+    if (field.startsWith('destinatario')) setSelectedDestinatarioId('')
+    if (formError) setFormError('')
+    if (feedback?.type === 'error') setFeedback(null)
   }
 
   function handleContactChange(
@@ -224,6 +248,58 @@ export function CorreiosView() {
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
 
+    const requiredFields: (keyof FormState)[] = [
+      'remetenteNome', 'destinatarioNome', 'remetenteCep', 'destinatarioCep',
+      'remetenteRua', 'destinatarioRua', 'remetenteNumero', 'destinatarioNumero',
+      'remetenteBairro', 'destinatarioBairro', 'remetenteCidade', 'destinatarioCidade',
+      'remetenteUf', 'destinatarioUf', 'servico', 'peso', 'altura', 'largura',
+      'comprimento', 'conteudo', 'chamado', 'centroCusto',
+    ]
+    const fieldLabels: Partial<Record<keyof FormState, string>> = {
+      remetenteNome: 'Nome do remetente',
+      destinatarioNome: 'Nome do destinatário',
+      remetenteCep: 'CEP do remetente',
+      destinatarioCep: 'CEP do destinatário',
+      remetenteRua: 'Rua do remetente',
+      destinatarioRua: 'Rua do destinatário',
+      remetenteNumero: 'Número do remetente',
+      destinatarioNumero: 'Número do destinatário',
+      remetenteBairro: 'Bairro do remetente',
+      destinatarioBairro: 'Bairro do destinatário',
+      remetenteCidade: 'Cidade do remetente',
+      destinatarioCidade: 'Cidade do destinatário',
+      remetenteUf: 'UF do remetente',
+      destinatarioUf: 'UF do destinatário',
+      servico: 'Serviço',
+      peso: 'Peso',
+      altura: 'Altura',
+      largura: 'Largura',
+      comprimento: 'Comprimento',
+      conteudo: 'Conteúdo',
+      chamado: 'Chamado Agilis',
+      centroCusto: 'Centro de custo',
+    }
+    const missingFields = requiredFields.filter((field) => !String(form[field]).trim())
+    const invalidNumberFields = ['peso', 'altura', 'largura', 'comprimento'].filter(
+      (field) => String(form[field as keyof FormState]).trim() && Number(form[field as keyof FormState]) <= 0,
+    ) as (keyof FormState)[]
+
+    if (missingFields.length || invalidNumberFields.length) {
+      const messages = []
+      if (missingFields.length) {
+        messages.push(`Preencha: ${missingFields.map((field) => fieldLabels[field]).join(', ')}.`)
+      }
+      if (invalidNumberFields.length) {
+        messages.push(`${invalidNumberFields.map((field) => fieldLabels[field]).join(', ')} devem ser maiores que zero.`)
+      }
+      const message = messages.join(' ')
+      setFormError(message)
+      setFeedback({ type: 'error', message: 'Postagem não criada. Revise os campos destacados.' })
+      return
+    }
+
+    setFormError('')
+
     const codigo = `BR${Date.now().toString().slice(-8)}SP`
     const novoRegistro: Postagem = {
       codigo,
@@ -263,6 +339,7 @@ export function CorreiosView() {
 
     setPostagensState((prev) => [novoRegistro, ...prev])
     setSelectedPost(novoRegistro)
+    setFeedback({ type: 'success', message: 'Postagem criada com sucesso.' })
 
     setForm(initialFormState)
     setShowForm(false)
@@ -273,6 +350,18 @@ export function CorreiosView() {
 
   return (
     <div className="flex flex-col gap-6">
+      {feedback && (
+        <div
+          role="status"
+          className={`fixed right-4 top-20 z-50 max-w-sm rounded-md border px-4 py-3 text-sm font-medium shadow-lg ${
+            feedback.type === 'success'
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-red-300 bg-red-50 text-red-800'
+          }`}
+        >
+          {feedback.message}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SearchField
           type="search"
@@ -310,34 +399,55 @@ export function CorreiosView() {
               </Button>
             </div>
 
-            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-5" noValidate onSubmit={handleSubmit}>
+              {formError && (
+                <p ref={formErrorRef} role="alert" className="relative z-10 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {formError}
+                </p>
+              )}
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-md border border-border bg-muted/25 p-3">
                   <p className="mb-2 text-sm font-semibold text-foreground">Remetente</p>
                   <div className="grid gap-3">
-                    <label className="space-y-1 text-sm">
-                      Remetente *
+                    <div className="relative space-y-1 text-sm">
+                      <label htmlFor="remetente-salvo">Remetente salvo (opcional)</label>
                       <input
-                        list="remetentes-list"
-                        value={selectedRemetenteId}
+                        id="remetente-salvo"
+                        value={savedContactSearch.remetente}
                         onChange={(event) => {
-                          setSelectedRemetenteId(event.target.value)
-                          const contact = contatosState.find((item) => item.id === event.target.value)
-                          if (contact) applySavedContact('remetente', contact.id)
+                          setSelectedRemetenteId('')
+                          setSavedContactSearch((prev) => ({ ...prev, remetente: event.target.value }))
+                          setOpenContactPicker('remetente')
                         }}
-                        placeholder="Pesquisar remetente salvo"
+                        onFocus={() => setOpenContactPicker('remetente')}
+                        placeholder="Pesquisar remetente salvo ou preencher manualmente abaixo"
                         className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                       />
-                      <datalist id="remetentes-list">
-                        {contatosState.filter((item) => item.tipo === 'remetente').map((item) => (
-                          <option key={item.id} value={item.id}>{item.nome} - {item.endereco.cidade}/{item.endereco.uf}</option>
-                        ))}
-                      </datalist>
-                    </label>
+                      {selectedRemetenteId && (
+                        <p className="text-xs text-muted-foreground">
+                          Contato aplicado: {contatosState.find((item) => item.id === selectedRemetenteId)?.nome}
+                        </p>
+                      )}
+                      {openContactPicker === 'remetente' && (
+                        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-white p-1 shadow-lg">
+                          <button type="button" className="w-full rounded px-2 py-2 text-left text-sm hover:bg-muted" onClick={() => { setSelectedRemetenteId(''); setSavedContactSearch((prev) => ({ ...prev, remetente: '' })); setOpenContactPicker(null) }}>
+                            Preencher manualmente
+                          </button>
+                          {getSavedContacts('remetente').map((contact) => (
+                            <button key={contact.id} type="button" className="w-full rounded px-2 py-2 text-left text-sm hover:bg-muted" onClick={() => { applySavedContact('remetente', contact.id); setSavedContactSearch((prev) => ({ ...prev, remetente: '' })); setOpenContactPicker(null) }}>
+                              <span className="block font-medium">{contact.nome}</span>
+                              <span className="block text-xs text-muted-foreground">{contact.endereco.cidade}/{contact.endereco.uf} · {contact.endereco.cep}</span>
+                            </button>
+                          ))}
+                          {getSavedContacts('remetente').length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">Nenhum remetente encontrado.</p>}
+                        </div>
+                      )}
+                    </div>
                     <input
                       value={form.remetenteNome}
                       onChange={(event) => handleInputChange('remetenteNome', event.target.value)}
                       placeholder="Nome da pessoa ou empresa"
+                      required
                       className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     />
                     <input
@@ -352,29 +462,45 @@ export function CorreiosView() {
                 <div className="rounded-md border border-border bg-muted/25 p-3">
                   <p className="mb-2 text-sm font-semibold text-foreground">Destinatário</p>
                   <div className="grid gap-3">
-                    <label className="space-y-1 text-sm">
-                      Destinatário *
+                    <div className="relative space-y-1 text-sm">
+                      <label htmlFor="destinatario-salvo">Destinatário salvo (opcional)</label>
                       <input
-                        list="destinatarios-list"
-                        value={selectedDestinatarioId}
+                        id="destinatario-salvo"
+                        value={savedContactSearch.destinatario}
                         onChange={(event) => {
-                          setSelectedDestinatarioId(event.target.value)
-                          const contact = contatosState.find((item) => item.id === event.target.value)
-                          if (contact) applySavedContact('destinatario', contact.id)
+                          setSelectedDestinatarioId('')
+                          setSavedContactSearch((prev) => ({ ...prev, destinatario: event.target.value }))
+                          setOpenContactPicker('destinatario')
                         }}
-                        placeholder="Pesquisar destinatário salvo"
+                        onFocus={() => setOpenContactPicker('destinatario')}
+                        placeholder="Pesquisar destinatário salvo ou preencher manualmente abaixo"
                         className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                       />
-                      <datalist id="destinatarios-list">
-                        {contatosState.filter((item) => item.tipo === 'destinatario').map((item) => (
-                          <option key={item.id} value={item.id}>{item.nome} - {item.endereco.cidade}/{item.endereco.uf}</option>
-                        ))}
-                      </datalist>
-                    </label>
+                      {selectedDestinatarioId && (
+                        <p className="text-xs text-muted-foreground">
+                          Contato aplicado: {contatosState.find((item) => item.id === selectedDestinatarioId)?.nome}
+                        </p>
+                      )}
+                      {openContactPicker === 'destinatario' && (
+                        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-white p-1 shadow-lg">
+                          <button type="button" className="w-full rounded px-2 py-2 text-left text-sm hover:bg-muted" onClick={() => { setSelectedDestinatarioId(''); setSavedContactSearch((prev) => ({ ...prev, destinatario: '' })); setOpenContactPicker(null) }}>
+                            Preencher manualmente
+                          </button>
+                          {getSavedContacts('destinatario').map((contact) => (
+                            <button key={contact.id} type="button" className="w-full rounded px-2 py-2 text-left text-sm hover:bg-muted" onClick={() => { applySavedContact('destinatario', contact.id); setSavedContactSearch((prev) => ({ ...prev, destinatario: '' })); setOpenContactPicker(null) }}>
+                              <span className="block font-medium">{contact.nome}</span>
+                              <span className="block text-xs text-muted-foreground">{contact.endereco.cidade}/{contact.endereco.uf} · {contact.endereco.cep}</span>
+                            </button>
+                          ))}
+                          {getSavedContacts('destinatario').length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">Nenhum destinatário encontrado.</p>}
+                        </div>
+                      )}
+                    </div>
                     <input
                       value={form.destinatarioNome}
                       onChange={(event) => handleInputChange('destinatarioNome', event.target.value)}
                       placeholder="Nome da pessoa ou empresa"
+                      required
                       className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     />
                     <input
@@ -400,6 +526,7 @@ export function CorreiosView() {
                     value={form.remetenteCep}
                     onChange={(event) => handleInputChange('remetenteCep', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -408,6 +535,7 @@ export function CorreiosView() {
                     value={form.remetenteRua}
                     onChange={(event) => handleInputChange('remetenteRua', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -416,6 +544,7 @@ export function CorreiosView() {
                     value={form.remetenteNumero}
                     onChange={(event) => handleInputChange('remetenteNumero', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
@@ -435,6 +564,7 @@ export function CorreiosView() {
                     value={form.remetenteBairro}
                     onChange={(event) => handleInputChange('remetenteBairro', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -443,6 +573,7 @@ export function CorreiosView() {
                     value={form.remetenteCidade}
                     onChange={(event) => handleInputChange('remetenteCidade', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -451,6 +582,7 @@ export function CorreiosView() {
                     value={form.remetenteUf}
                     onChange={(event) => handleInputChange('remetenteUf', event.target.value.toUpperCase())}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm uppercase outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
@@ -462,6 +594,7 @@ export function CorreiosView() {
                     value={form.destinatarioCep}
                     onChange={(event) => handleInputChange('destinatarioCep', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -470,6 +603,7 @@ export function CorreiosView() {
                     value={form.destinatarioRua}
                     onChange={(event) => handleInputChange('destinatarioRua', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -478,6 +612,7 @@ export function CorreiosView() {
                     value={form.destinatarioNumero}
                     onChange={(event) => handleInputChange('destinatarioNumero', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
@@ -497,6 +632,7 @@ export function CorreiosView() {
                     value={form.destinatarioBairro}
                     onChange={(event) => handleInputChange('destinatarioBairro', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -505,6 +641,7 @@ export function CorreiosView() {
                     value={form.destinatarioCidade}
                     onChange={(event) => handleInputChange('destinatarioCidade', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -513,6 +650,7 @@ export function CorreiosView() {
                     value={form.destinatarioUf}
                     onChange={(event) => handleInputChange('destinatarioUf', event.target.value.toUpperCase())}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm uppercase outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
@@ -524,6 +662,7 @@ export function CorreiosView() {
                     value={form.servico}
                     onChange={(event) => handleInputChange('servico', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   >
                     {servicosCorreios.map((servico) => (
                       <option key={servico.tipo} value={servico.tipo}>{servico.tipo}</option>
@@ -538,6 +677,7 @@ export function CorreiosView() {
                     value={form.peso}
                     onChange={(event) => handleInputChange('peso', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -546,6 +686,7 @@ export function CorreiosView() {
                     value={form.conteudo}
                     onChange={(event) => handleInputChange('conteudo', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
@@ -559,6 +700,7 @@ export function CorreiosView() {
                     value={form.altura}
                     onChange={(event) => handleInputChange('altura', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -569,6 +711,7 @@ export function CorreiosView() {
                     value={form.largura}
                     onChange={(event) => handleInputChange('largura', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -579,6 +722,7 @@ export function CorreiosView() {
                     value={form.comprimento}
                     onChange={(event) => handleInputChange('comprimento', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
                 <label className="space-y-1 text-sm">
@@ -587,6 +731,7 @@ export function CorreiosView() {
                     value={form.chamado}
                     onChange={(event) => handleInputChange('chamado', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </label>
               </div>
@@ -599,6 +744,7 @@ export function CorreiosView() {
                     value={form.centroCusto}
                     onChange={(event) => handleInputChange('centroCusto', event.target.value)}
                     className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                   <datalist id="centros-custo-list">
                     {centrosCustoList.map((item) => (
