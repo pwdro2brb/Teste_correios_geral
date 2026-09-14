@@ -1,3 +1,5 @@
+import type { MaloteStatus, PercursoStatus, PostagemStatus } from './domain/status'
+
 export const kpis = {
   custoMes: 184320.5,
   custoMesVariacao: -8.4,
@@ -52,7 +54,7 @@ export interface Postagem {
   dimensoes: string
   pesoKg: number
   fragil: boolean
-  status: 'postado' | 'em_transito' | 'entregue' | 'atrasado'
+  status: PostagemStatus
   valor: number
   data: string
   colaborador: string
@@ -98,7 +100,7 @@ export const servicosCorreios: ServicoCorreio[] = [
     codigoServico: '03298',
     descricao: 'PAC com adicional de aviso de recebimento',
     prazo: '5-10 dias úteis',
-    faixaPreco: 'Média',
+    faixaPreco: 'Baixa',
     valorEstimado: 42.5,
   },
   {
@@ -106,7 +108,7 @@ export const servicosCorreios: ServicoCorreio[] = [
     codigoServico: '03220',
     descricao: 'SEDEX com adicional de aviso de recebimento',
     prazo: '2-4 dias úteis',
-    faixaPreco: 'Alta',
+    faixaPreco: 'Média',
     valorEstimado: 68.4,
   },
   {
@@ -275,7 +277,7 @@ export interface Malote {
   rota: string
   origem: string
   destino: string
-  status: 'aguardando_coleta' | 'em_transito' | 'entregue'
+  status: MaloteStatus
   concluido?: boolean
   responsavel: string
   centroCusto: string
@@ -382,7 +384,7 @@ export interface Percurso {
   destino: string
   frequencia: string
   custoEstimado: number
-  status: 'pendente' | 'aprovado' | 'reprovado' | 'suspenso' | 'cancelado'
+  status: PercursoStatus
   data: string
 }
 

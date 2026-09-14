@@ -4,6 +4,8 @@ type Variant = 'default' | 'secondary' | 'outline' | 'success' | 'warning' | 'da
 
 const MAP: Record<string, { label: string; variant: Variant }> = {
   // postagens
+  rascunho: { label: 'Rascunho', variant: 'secondary' },
+  etiqueta_gerada: { label: 'Etiqueta gerada', variant: 'info' },
   postado: { label: 'Postado', variant: 'info' },
   em_transito: { label: 'Em trânsito', variant: 'warning' },
   entregue: { label: 'Entregue', variant: 'success' },
