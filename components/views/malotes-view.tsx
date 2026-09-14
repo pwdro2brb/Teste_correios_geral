@@ -4,16 +4,19 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Plus, QrCode, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { FeedbackMessage } from '@/components/ui/feedback-message'
+import { EmptyState } from '@/components/ui/state-views'
 import { StatusBadge } from '@/components/status-badge'
 import { Pagination } from '@/components/ui/pagination'
 import { LoadingState, ErrorState } from '@/components/ui/state-views'
-import { formatBRL } from '@/lib/format'
+import { formatBRL, formatDateTimeBR } from '@/lib/format'
 import { useScrollIntoView } from '@/lib/use-scroll-into-view'
 import { usePagination } from '@/lib/use-pagination'
 import { useAsyncData } from '@/lib/use-async-data'
 import { fetchMalotes } from '@/lib/mock-api'
 import { type Malote, maloteRotas } from '@/lib/mock-data'
 import { useProfile } from '@/components/profile-context'
+import { validateCriarMalote } from '@/lib/validation/malote'
 
 const initialMaloteForm = {
   rotaId: maloteRotas[0]?.id ?? '',
@@ -63,15 +66,15 @@ export function MalotesView() {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const requiredFields = [form.rotaId, form.quemEnviou, form.quemRecebe, form.chamado, form.conteudo, form.peso, form.centroCusto]
-    if (!selectedRoute || requiredFields.some((value) => !value.trim()) || Number(form.peso) <= 0) {
-      const message = Number(form.peso) <= 0 && form.peso.trim()
-        ? 'O peso deve ser maior que zero.'
-        : 'Preencha todos os campos obrigatórios (*) antes de registrar o malote.'
+    try {
+      validateCriarMalote({ ...form, peso: Number(form.peso) })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Revise os campos obrigatórios do malote.'
       setFormError(message)
       setFeedback({ type: 'error', message: 'Malote não criado. Revise os campos destacados.' })
       return
     }
+    if (!selectedRoute) return
 
     setFormError('')
 
@@ -89,7 +92,7 @@ export function MalotesView() {
       valorEstimado: 0,
       confirmacao: `QR-${Date.now().toString().slice(-4)}`,
       ultimoEvento: 'Registrado e aguardando coleta',
-      atualizadoEm: new Date().toLocaleDateString('pt-BR'),
+      atualizadoEm: new Date().toISOString(),
       solicitante: profile.nome,
     }
 
@@ -97,6 +100,13 @@ export function MalotesView() {
     setFeedback({ type: 'success', message: 'Malote registrado com sucesso.' })
     setForm(initialMaloteForm)
     setShowForm(false)
+  }
+
+  function closeForm() {
+    const hasChanges = Object.entries(form).some(([field, value]) => value !== initialMaloteForm[field as keyof typeof initialMaloteForm])
+    if (hasChanges && !window.confirm('Os dados preenchidos serão perdidos. Deseja sair?')) return
+    setShowForm(false)
+    setFormError('')
   }
 
   function updateMaloteStatus(id: string, status: 'aguardando_coleta' | 'em_transito' | 'entregue') {
@@ -112,7 +122,7 @@ export function MalotesView() {
                   : status === 'entregue'
                     ? 'Malote entregue - aguardando confirmação'
                     : 'Aguardando coleta',
-              atualizadoEm: new Date().toLocaleDateString('pt-BR'),
+              atualizadoEm: new Date().toISOString(),
             }
           : malote,
       ),
@@ -123,7 +133,7 @@ export function MalotesView() {
     setMalotesState((prev) =>
       prev.map((malote) =>
         malote.id === id
-          ? { ...malote, concluido: true, ultimoEvento: 'Malote concluído pela administração', atualizadoEm: new Date().toLocaleDateString('pt-BR') }
+          ? { ...malote, concluido: true, ultimoEvento: 'Malote concluído pela administração', atualizadoEm: new Date().toISOString() }
           : malote,
       ),
     )
@@ -135,16 +145,7 @@ export function MalotesView() {
   return (
     <div className="flex flex-col gap-6">
       {feedback && (
-        <div
-          role="status"
-          className={`fixed right-4 top-20 z-50 max-w-sm rounded-md border px-4 py-3 text-sm font-medium shadow-lg ${
-            feedback.type === 'success'
-              ? 'border-green-200 bg-green-50 text-green-800'
-              : 'border-red-300 bg-red-50 text-red-800'
-          }`}
-        >
-          {feedback.message}
-        </div>
+        <FeedbackMessage type={feedback.type} message={feedback.message} />
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="rounded-md border border-dashed border-border bg-accent/40 px-3 py-2 text-xs text-accent-foreground">
@@ -165,7 +166,7 @@ export function MalotesView() {
                 <p className="text-base font-semibold text-foreground">Registrar novo malote</p>
                 <p className="text-sm text-muted-foreground">Informe a rota, suporte, responsável e o chamado do pedido.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>
+              <Button variant="outline" size="sm" onClick={closeForm}>
                 Fechar
               </Button>
             </div>
@@ -260,7 +261,7 @@ export function MalotesView() {
                 <Button type="submit" size="sm">
                   Registrar malote
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" size="sm" onClick={closeForm}>
                   Cancelar
                 </Button>
               </div>
@@ -328,7 +329,9 @@ export function MalotesView() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {malotesPagination.paginated.map((m) => (
+        {malotesState.length === 0 ? (
+          <EmptyState message="Nenhum malote registrado para esta regional." />
+        ) : malotesPagination.paginated.map((m) => (
           <Card key={m.id}>
             <CardHeader className="flex-row items-center justify-between">
               <div>
@@ -344,7 +347,7 @@ export function MalotesView() {
                 <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">Centro de custo</span><span className="font-medium text-foreground">{m.centroCusto}</span></div>
                 <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">Chamado</span><span className="font-medium text-foreground">{m.chamado}</span></div>
                 <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">Peso</span><span className="font-medium text-foreground">{m.pesoKg.toFixed(1)} kg</span></div>
-                <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">Confirmação</span><span className="font-mono text-xs text-foreground">{m.confirmacao}</span></div>
+                <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">Atualizado em</span><span className="text-xs text-foreground">{formatDateTimeBR(m.atualizadoEm)}</span></div>
               </div>
 
               <div className="rounded-lg bg-card p-3 text-sm text-muted-foreground">

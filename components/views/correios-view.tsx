@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Plus, MapPin, Link2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { FeedbackMessage } from '@/components/ui/feedback-message'
 import { SearchField } from '@/components/ui/search-field'
 import { StatusBadge } from '@/components/status-badge'
 import { Pagination } from '@/components/ui/pagination'
@@ -120,6 +121,21 @@ export function CorreiosView() {
     const timeout = setTimeout(() => setFeedback(null), 4000)
     return () => clearTimeout(timeout)
   }, [feedback])
+
+  useEffect(() => {
+    function closePicker(event: MouseEvent) {
+      if (!(event.target as HTMLElement).closest('[data-contact-picker]')) setOpenContactPicker(null)
+    }
+    function closePickerWithEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpenContactPicker(null)
+    }
+    document.addEventListener('mousedown', closePicker)
+    document.addEventListener('keydown', closePickerWithEscape)
+    return () => {
+      document.removeEventListener('mousedown', closePicker)
+      document.removeEventListener('keydown', closePickerWithEscape)
+    }
+  }, [])
 
   const filteredPostagens = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -345,22 +361,20 @@ export function CorreiosView() {
     setShowForm(false)
   }
 
+  function closeForm() {
+    const hasChanges = Object.entries(form).some(([field, value]) => value !== initialFormState[field as keyof FormState])
+    if (hasChanges && !window.confirm('Os dados preenchidos serão perdidos. Deseja sair?')) return
+    setShowForm(false)
+    setFormError('')
+  }
+
   if (loading) return <LoadingState label="Carregando postagens..." />
   if (error) return <ErrorState message={error} onRetry={retry} />
 
   return (
     <div className="flex flex-col gap-6">
       {feedback && (
-        <div
-          role="status"
-          className={`fixed right-4 top-20 z-50 max-w-sm rounded-md border px-4 py-3 text-sm font-medium shadow-lg ${
-            feedback.type === 'success'
-              ? 'border-green-200 bg-green-50 text-green-800'
-              : 'border-red-300 bg-red-50 text-red-800'
-          }`}
-        >
-          {feedback.message}
-        </div>
+        <FeedbackMessage type={feedback.type} message={feedback.message} />
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SearchField
@@ -394,7 +408,7 @@ export function CorreiosView() {
                 <p className="text-base font-semibold text-foreground">Nova postagem</p>
                 <p className="text-sm text-muted-foreground">Preencha os dados do remetente, destinatário e o serviço para gerar a etiqueta e a DC-e.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>
+              <Button variant="outline" size="sm" onClick={closeForm}>
                 Fechar
               </Button>
             </div>
@@ -409,7 +423,7 @@ export function CorreiosView() {
                 <div className="rounded-md border border-border bg-muted/25 p-3">
                   <p className="mb-2 text-sm font-semibold text-foreground">Remetente</p>
                   <div className="grid gap-3">
-                    <div className="relative space-y-1 text-sm">
+                    <div data-contact-picker className="relative space-y-1 text-sm">
                       <label htmlFor="remetente-salvo">Remetente salvo (opcional)</label>
                       <input
                         id="remetente-salvo"
@@ -462,7 +476,7 @@ export function CorreiosView() {
                 <div className="rounded-md border border-border bg-muted/25 p-3">
                   <p className="mb-2 text-sm font-semibold text-foreground">Destinatário</p>
                   <div className="grid gap-3">
-                    <div className="relative space-y-1 text-sm">
+                    <div data-contact-picker className="relative space-y-1 text-sm">
                       <label htmlFor="destinatario-salvo">Destinatário salvo (opcional)</label>
                       <input
                         id="destinatario-salvo"
@@ -767,7 +781,7 @@ export function CorreiosView() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="submit" size="sm">Salvar postagem</Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" size="sm" onClick={closeForm}>
                   Cancelar
                 </Button>
                 <div className="ml-auto text-sm font-medium text-foreground">Valor estimado: {formatBRL(estimatedValue)}</div>
@@ -978,7 +992,7 @@ export function CorreiosView() {
                 {filteredPostagens.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">
-                      Nenhuma postagem encontrada para o filtro atual.
+                      {postagensState.length === 0 ? 'Nenhuma postagem registrada.' : 'Nenhuma postagem encontrada para o filtro atual.'}
                     </td>
                   </tr>
                 ) : (
