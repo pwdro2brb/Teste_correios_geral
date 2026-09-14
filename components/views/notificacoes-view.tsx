@@ -3,7 +3,10 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, Route, AlertTriangle, MessageSquare } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/pagination'
+import { EmptyState } from '@/components/ui/state-views'
 import { cn } from '@/lib/utils'
+import { usePagination } from '@/lib/use-pagination'
 import { notificacoes } from '@/lib/mock-data'
 
 const CONFIG = {
@@ -31,6 +34,7 @@ export function NotificacoesView() {
     if (filter === 'unread') return notificacoes.filter((item) => !item.lida)
     return notificacoes
   }, [filter])
+  const notificationsPagination = usePagination(visibleNotifications, 8)
 
   const unreadCount = notificacoes.filter((item) => !item.lida).length
 
@@ -75,11 +79,9 @@ export function NotificacoesView() {
 
         <CardContent className="flex flex-col gap-3">
           {visibleNotifications.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border bg-muted/20 p-5 text-center text-sm text-muted-foreground">
-              Nenhuma notificação para este filtro.
-            </div>
+            <EmptyState message="Nenhuma notificação para este filtro." />
           ) : (
-            visibleNotifications.map((n) => {
+            notificationsPagination.paginated.map((n) => {
               const cfg = CONFIG[n.tipo]
               const Icon = cfg.icon
               return (
@@ -106,6 +108,13 @@ export function NotificacoesView() {
             })
           )}
         </CardContent>
+        <Pagination
+          page={notificationsPagination.page}
+          pageCount={notificationsPagination.pageCount}
+          totalItems={notificationsPagination.totalItems}
+          pageSize={notificationsPagination.pageSize}
+          onPageChange={notificationsPagination.goToPage}
+        />
       </Card>
     </div>
   )

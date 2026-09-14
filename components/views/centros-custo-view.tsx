@@ -14,6 +14,7 @@ import { fetchCentrosCusto } from '@/lib/mock-api'
 import { useAsyncData } from '@/lib/use-async-data'
 import { usePagination } from '@/lib/use-pagination'
 import { useCostCenters } from '@/lib/cost-centers-context'
+import { useProfile } from '@/components/profile-context'
 
 function escapeCsvValue(value: string | number | undefined) {
   if (value === undefined || value === null) {
@@ -86,6 +87,7 @@ function downloadCentroCustoReport(centro: CentroCusto) {
 }
 
 export function CentrosCustoView() {
+  const { role } = useProfile()
   const { data: centrosCusto, loading, error, retry } = useAsyncData(fetchCentrosCusto)
   const { centrosValidos, importarPlanilha } = useCostCenters()
   const [validosSearch, setValidosSearch] = useState('')
@@ -100,6 +102,7 @@ export function CentrosCustoView() {
   const centrosPagination = usePagination(centrosCusto ?? [], 6)
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (role !== 'admin') return
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -145,18 +148,20 @@ export function CentrosCustoView() {
               <p className="text-sm font-semibold text-foreground">Centros de custo válidos</p>
               <p className="text-sm text-muted-foreground">Lista importada da planilha oficial de centros de custo.</p>
             </div>
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.txt"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="size-4" /> Importar planilha (CSV)
-              </Button>
-            </div>
+            {role === 'admin' && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.txt"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="size-4" /> Importar planilha (CSV)
+                </Button>
+              </div>
+            )}
           </div>
 
           <input
