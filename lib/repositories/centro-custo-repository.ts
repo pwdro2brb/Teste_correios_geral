@@ -24,7 +24,11 @@ export function createSqliteCentroCustoRepository() {
     },
 
     async list(): Promise<CentroCustoRecord[]> {
-      const rows = db.prepare('SELECT * FROM centros_custo WHERE ativo = 1 ORDER BY codigo').all() as CentroCustoRow[]
+      const rows = db.prepare('SELECT * FROM centros_custo WHERE ativo = 1 ORDER BY codigo').all().map((row) => ({
+        codigo: String(row.codigo),
+        nome: String(row.nome),
+        ativo: Number(row.ativo),
+      }))
       return rows.map((row) => ({ codigo: row.codigo, nome: row.nome, ativo: Boolean(row.ativo) }))
     },
   }

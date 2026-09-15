@@ -56,7 +56,14 @@ export function createSqlitePostagemRepository(): PostagemRepository {
     },
 
     async list() {
-      const rows = db.prepare('SELECT * FROM postagens ORDER BY created_at DESC').all() as PostagemRow[]
+      const rows = db.prepare('SELECT * FROM postagens ORDER BY created_at DESC').all().map((row) => ({
+        id: String(row.id),
+        dados_json: String(row.dados_json),
+        codigo_rastreio: row.codigo_rastreio === null ? null : String(row.codigo_rastreio),
+        status: String(row.status),
+        created_at: String(row.created_at),
+        updated_at: String(row.updated_at),
+      }))
       return rows.map(rowToRecord)
     },
   }

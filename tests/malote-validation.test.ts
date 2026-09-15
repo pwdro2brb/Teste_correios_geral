@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 // Node's native TypeScript runner requires the explicit extension here.
-// @ts-expect-error The application compiler resolves this module through the bundler.
 import { validateCriarMalote } from '../lib/validation/malote.ts'
 
 const validInput = {

@@ -54,9 +54,31 @@ export function validateCriarPostagem(input: unknown): CriarPostagemInput {
     })
   }
 
+  const text = (field: string) => String(value[field] ?? '')
+  const number = (field: string) => Number(value[field])
+
   return {
-    ...(value as CriarPostagemInput),
-    remetenteUf: value.remetenteUf as string,
-    destinatarioUf: value.destinatarioUf as string,
+    remetenteNome: text('remetenteNome'),
+    destinatarioNome: text('destinatarioNome'),
+    remetenteCep: text('remetenteCep'),
+    destinatarioCep: text('destinatarioCep'),
+    remetenteRua: text('remetenteRua'),
+    destinatarioRua: text('destinatarioRua'),
+    remetenteNumero: text('remetenteNumero'),
+    destinatarioNumero: text('destinatarioNumero'),
+    remetenteBairro: text('remetenteBairro'),
+    destinatarioBairro: text('destinatarioBairro'),
+    remetenteCidade: text('remetenteCidade'),
+    destinatarioCidade: text('destinatarioCidade'),
+    remetenteUf: text('remetenteUf'),
+    destinatarioUf: text('destinatarioUf'),
+    servico: text('servico'),
+    peso: number('peso'),
+    altura: number('altura'),
+    largura: number('largura'),
+    comprimento: number('comprimento'),
+    conteudo: text('conteudo'),
+    chamado: text('chamado'),
+    centroCusto: text('centroCusto'),
   }
 }

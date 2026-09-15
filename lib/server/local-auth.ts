@@ -1,7 +1,6 @@
 // Temporary local login, used only until the Entra ID (SSO corporativo) adapter is configured.
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from 'node:crypto'
 // Node's native TypeScript runner requires the explicit extension here.
-// @ts-expect-error The application compiler resolves this module through the bundler.
 import { getDb } from './db.ts'
 import type { Role } from '@/lib/roles'
 

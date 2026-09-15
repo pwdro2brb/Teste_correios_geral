@@ -44,9 +44,14 @@ export function createSqliteContatoRepository() {
     },
 
     async list(tipo?: ContatoInput['tipo']): Promise<ContatoRecord[]> {
-      const rows = tipo
-        ? (db.prepare('SELECT * FROM contatos WHERE tipo = ? ORDER BY created_at DESC').all(tipo) as ContatoRow[])
-        : (db.prepare('SELECT * FROM contatos ORDER BY created_at DESC').all() as ContatoRow[])
+      const rows = (tipo
+        ? db.prepare('SELECT * FROM contatos WHERE tipo = ? ORDER BY created_at DESC').all(tipo)
+        : db.prepare('SELECT * FROM contatos ORDER BY created_at DESC').all()).map((row) => ({
+        id: String(row.id),
+        tipo: String(row.tipo),
+        dados_json: String(row.dados_json),
+        created_at: String(row.created_at),
+      }))
       return rows.map(rowToRecord)
     },
   }

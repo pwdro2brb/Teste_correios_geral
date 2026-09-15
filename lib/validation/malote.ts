@@ -1,5 +1,4 @@
 // Node's native TypeScript runner requires the explicit extension here.
-// @ts-expect-error The application compiler resolves this module through the bundler.
 import { ApiError } from '../api/errors.ts'
 
 export interface CriarMaloteInput {

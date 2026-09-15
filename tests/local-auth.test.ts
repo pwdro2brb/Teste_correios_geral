@@ -4,7 +4,6 @@ import assert from 'node:assert/strict'
 process.env.DATABASE_URL = 'memory'
 process.env.AUTH_SECRET = 'test-secret'
 
-// @ts-expect-error The application compiler resolves this module through the bundler.
 import { createLocalUser, authenticateLocalUser, createSessionToken, verifySessionToken } from '../lib/server/local-auth.ts'
 
 test('creates and authenticates a local mrv.com.br user', () => {

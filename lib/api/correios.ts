@@ -2,15 +2,62 @@
 // autenticação (usuário + código de acesso) -> pré-postagem -> etiqueta assíncrona -> DCe.
 import { ApiError } from './errors'
 import { requestJson } from './http'
+import type { CriarPostagemInput } from '@/lib/validation/postagem'
 
 function getCorreiosConfig() {
   const baseUrl = (process.env.CORREIOS_API_BASE_URL || 'https://api.correios.com.br').replace(/\/$/, '')
   const usuario = process.env.CORREIOS_USUARIO
   const codigoAcesso = process.env.CORREIOS_CODIGO_ACESSO
-  if (!usuario || !codigoAcesso) {
+  const idCorreios = process.env.CORREIOS_ID_CORREIOS
+  const numeroCartaoPostagem = process.env.CORREIOS_CARTAO_POSTAGEM
+  if (!usuario || !codigoAcesso || !idCorreios || !numeroCartaoPostagem) {
     throw new ApiError('A integração com os Correios ainda não foi configurada.', 'CONFIGURATION_ERROR', 503)
   }
-  return { baseUrl, usuario, codigoAcesso }
+  return { baseUrl, usuario, codigoAcesso, idCorreios, numeroCartaoPostagem }
+}
+
+const CODIGOS_SERVICO: Record<string, string> = {
+  PAC: '03298',
+  SEDEX: '03220',
+  'SEDEX 10': '03158',
+  'SEDEX 12': '03140',
+  'PAC + AR': '03298',
+  'SEDEX + AR': '03220',
+  'SEDEX 12 + AR': '03140',
+}
+
+function toCorreiosPayload(input: CriarPostagemInput) {
+  const { idCorreios, numeroCartaoPostagem } = getCorreiosConfig()
+  const codigoServico = CODIGOS_SERVICO[input.servico]
+  if (!codigoServico) throw new ApiError('Serviço dos Correios não mapeado.', 'BAD_REQUEST', 400)
+
+  const toAddress = (prefix: 'remetente' | 'destinatario') => ({
+    cep: input[`${prefix}Cep`],
+    logradouro: input[`${prefix}Rua`],
+    numero: input[`${prefix}Numero`],
+    bairro: input[`${prefix}Bairro`],
+    cidade: input[`${prefix}Cidade`],
+    uf: input[`${prefix}Uf`].toUpperCase(),
+  })
+
+  return {
+    idCorreios,
+    remetente: { nome: input.remetenteNome, endereco: toAddress('remetente') },
+    destinatario: { nome: input.destinatarioNome, endereco: toAddress('destinatario') },
+    codigoServico,
+    numeroCartaoPostagem,
+    pesoInformado: String(Math.round(input.peso * 1000)),
+    codigoFormatoObjetoInformado: '2',
+    alturaInformada: String(input.altura),
+    larguraInformada: String(input.largura),
+    comprimentoInformado: String(input.comprimento),
+    cienteObjetoNaoProibido: '1',
+    pedidoExternoOrigem: input.chamado,
+    canalExternoOrigem: 'PORTAL_MRV',
+    observacao: `CC:${input.centroCusto} | Chamado Agilis:${input.chamado}`,
+    itensDeclaracaoConteudo: [{ conteudo: input.conteudo, quantidade: '1', valor: '0.01' }],
+    emiteDCe: 'S',
+  }
 }
 
 interface TokenCache {
@@ -129,7 +176,8 @@ export function consultarRastreio(codigoObjeto: string) {
 
 /** Fluxo completo: cria a pré-postagem, gera a etiqueta e a DCe a partir do payload já validado. */
 export async function criarPostagemCompleta(payload: unknown) {
-  const prePostagem = await criarPrePostagem(payload)
+  const correiosPayload = toCorreiosPayload(payload as CriarPostagemInput)
+  const prePostagem = await criarPrePostagem(correiosPayload)
   const { idRecibo } = await solicitarEtiqueta([prePostagem.id])
 
   // A geração do PDF é assíncrona nos Correios; uma pequena espera evita a primeira tentativa falhar.

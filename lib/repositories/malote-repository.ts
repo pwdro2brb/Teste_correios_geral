@@ -48,7 +48,13 @@ export function createSqliteMaloteRepository() {
     },
 
     async list(): Promise<MaloteRecord[]> {
-      const rows = db.prepare('SELECT * FROM malotes ORDER BY created_at DESC').all() as MaloteRow[]
+      const rows = db.prepare('SELECT * FROM malotes ORDER BY created_at DESC').all().map((row) => ({
+        id: String(row.id),
+        dados_json: String(row.dados_json),
+        status: String(row.status),
+        created_at: String(row.created_at),
+        updated_at: String(row.updated_at),
+      }))
       return rows.map(rowToRecord)
     },
   }

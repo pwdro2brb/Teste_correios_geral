@@ -4,6 +4,12 @@
 
 O Logistics Hub centraliza a operacao corporativa de envios, malotes, acompanhamento e governanca de custos. Este documento registra os requisitos funcionais e a sequencia de implementacao das abas a partir de Malotes. Painel geral e Correios ficam fora deste escopo, pois serao tratados em requisitos proprios.
 
+# Requisitos do Produto
+
+## Contexto
+
+O Logistics Hub centraliza a operacao corporativa de envios, malotes, acompanhamento e governanca de custos. Este documento registra os requisitos funcionais e a sequencia de implementacao das abas a partir de Malotes. Painel geral e Correios ficam fora deste escopo, pois serao tratados em requisitos proprios.
+
 ## Papeis
 
 | Papel | Responsabilidade principal |
@@ -102,6 +108,25 @@ O operador logistico deve ser mantido. Sua responsabilidade e operacional, separ
 - Estimativa, etiqueta, DC-e e atualizacao de status devem usar chamadas autenticadas e auditaveis.
 - Importacoes de centros de custo devem validar tipo, tamanho, colunas e conteudo antes da persistencia.
 - A integracao com Teams permanece desativada ate existir configuracao corporativa autorizada.
+
+### Estado tecnico atual
+
+- O login local temporario aceita somente e-mails `@mrv.com.br`, usa senha com hash `scrypt` e sessao assinada em cookie `httpOnly`.
+- O login local sera substituido por Entra ID quando o SSO corporativo estiver disponivel.
+- O banco de desenvolvimento e SQLite via `node:sqlite`, configurado por `DATABASE_URL` e criado sob demanda em `data/app.db`.
+- Credenciais dos Correios ficam em `CORREIOS_USUARIO` e `CORREIOS_CODIGO_ACESSO`. O usuario pode ser `correiosmrv`; o codigo de acesso nao e a chave de acesso.
+- O adapter server-side implementa token, pre-postagem, etiqueta assincrona, DC-e, prazo, preco e rastreio.
+- `.env`, `.env.local` e `data/` sao ignorados pelo Git.
+
+### Fluxo Correios validado
+
+1. Autenticar com usuario Meu Correios e codigo de acesso das APIs.
+2. Obter e reutilizar o token Bearer durante sua validade.
+3. Criar a pre-postagem.
+4. Solicitar o rotulo PDF assincrono.
+5. Baixar a etiqueta apos o processamento.
+6. Solicitar a Declaracao de Conteudo Eletronica.
+7. Persistir o codigo do objeto, documentos, status e auditoria.
 
 ## Ordem recomendada
 

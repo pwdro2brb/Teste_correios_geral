@@ -17,3 +17,4 @@ node_modules
 
 # Local SQLite database
 /data/
+*.tsbuildinfo

@@ -101,6 +101,7 @@ export function CorreiosView() {
   const [selectedPost, setSelectedPost] = useState<Postagem | null>(null)
   const [form, setForm] = useState<FormState>(initialFormState)
   const [formError, setFormError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [editingContact, setEditingContact] = useState<ContatoSalvo | null>(null)
   const [selectedRemetenteId, setSelectedRemetenteId] = useState('')
@@ -261,7 +262,7 @@ export function CorreiosView() {
     }))
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
 
     const requiredFields: (keyof FormState)[] = [
@@ -316,8 +317,46 @@ export function CorreiosView() {
 
     setFormError('')
 
-    const codigo = `BR${Date.now().toString().slice(-8)}SP`
-    const novoRegistro: Postagem = {
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch('/api/correios/postagens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          remetenteNome: form.remetenteNome,
+          destinatarioNome: form.destinatarioNome,
+          remetenteCep: form.remetenteCep,
+          destinatarioCep: form.destinatarioCep,
+          remetenteRua: form.remetenteRua,
+          destinatarioRua: form.destinatarioRua,
+          remetenteNumero: form.remetenteNumero,
+          destinatarioNumero: form.destinatarioNumero,
+          remetenteBairro: form.remetenteBairro,
+          destinatarioBairro: form.destinatarioBairro,
+          remetenteCidade: form.remetenteCidade,
+          destinatarioCidade: form.destinatarioCidade,
+          remetenteUf: form.remetenteUf,
+          destinatarioUf: form.destinatarioUf,
+          servico: form.servico,
+          peso: Number(form.peso),
+          altura: Number(form.altura),
+          largura: Number(form.largura),
+          comprimento: Number(form.comprimento),
+          conteudo: form.conteudo,
+          chamado: form.chamado,
+          centroCusto: form.centroCusto,
+        }),
+      })
+      const result = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(result?.error?.message ?? 'Não foi possível criar a postagem.')
+      }
+
+      const codigo = result?.correios?.codigoObjeto ?? result?.codigoRastreio
+      if (!codigo) throw new Error('A API não retornou o código de rastreio da postagem.')
+
+      const novoRegistro: Postagem = {
       codigo,
       remetente: form.remetenteNome,
       destinatario: form.destinatarioNome,
@@ -353,12 +392,19 @@ export function CorreiosView() {
       colaborador: profile.nome,
     }
 
-    setPostagensState((prev) => [novoRegistro, ...prev])
-    setSelectedPost(novoRegistro)
-    setFeedback({ type: 'success', message: 'Postagem criada com sucesso.' })
+      setPostagensState((prev) => [novoRegistro, ...prev])
+      setSelectedPost(novoRegistro)
+      setFeedback({ type: 'success', message: 'Postagem criada com sucesso nos Correios.' })
 
-    setForm(initialFormState)
-    setShowForm(false)
+      setForm(initialFormState)
+      setShowForm(false)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Não foi possível criar a postagem.'
+      setFormError(message)
+      setFeedback({ type: 'error', message: 'Postagem não criada. Corrija os dados ou tente novamente.' })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function closeForm() {
@@ -780,7 +826,9 @@ export function CorreiosView() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="submit" size="sm">Salvar postagem</Button>
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  {isSubmitting ? 'Enviando aos Correios...' : 'Salvar postagem'}
+                </Button>
                 <Button type="button" variant="outline" size="sm" onClick={closeForm}>
                   Cancelar
                 </Button>
