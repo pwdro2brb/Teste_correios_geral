@@ -1,25 +1,63 @@
+import { randomUUID } from 'node:crypto'
+import { getDb } from '@/lib/server/db'
 import type { CriarPostagemInput } from '@/lib/validation/postagem'
+import type { PostagemStatus } from '@/lib/domain/status'
 
 export interface PostagemRecord extends CriarPostagemInput {
   id: string
   codigoRastreio?: string
-  status: 'rascunho' | 'etiqueta_gerada' | 'postado' | 'em_transito' | 'entregue' | 'atrasado'
+  status: PostagemStatus
   createdAt: string
   updatedAt: string
 }
 
 export interface PostagemRepository {
-  create: (input: CriarPostagemInput) => Promise<PostagemRecord>
+  create: (input: CriarPostagemInput, codigoRastreio?: string) => Promise<PostagemRecord>
   findById: (id: string) => Promise<PostagemRecord | null>
+  list: () => Promise<PostagemRecord[]>
 }
 
-export function createUnavailablePostagemRepository(): PostagemRepository {
+interface PostagemRow {
+  id: string
+  dados_json: string
+  codigo_rastreio: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+function rowToRecord(row: PostagemRow): PostagemRecord {
   return {
-    async create() {
-      throw new Error('DATABASE_URL não configurada: persistência de postagens indisponível.')
+    ...(JSON.parse(row.dados_json) as CriarPostagemInput),
+    id: row.id,
+    codigoRastreio: row.codigo_rastreio ?? undefined,
+    status: row.status as PostagemStatus,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function createSqlitePostagemRepository(): PostagemRepository {
+  const db = getDb()
+
+  return {
+    async create(input, codigoRastreio) {
+      const id = `PST-${randomUUID().slice(0, 8)}`
+      const now = new Date().toISOString()
+      db.prepare(
+        'INSERT INTO postagens (id, dados_json, codigo_rastreio, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      ).run(id, JSON.stringify(input), codigoRastreio ?? null, 'postado', now, now)
+      return { ...input, id, codigoRastreio, status: 'postado', createdAt: now, updatedAt: now }
     },
-    async findById() {
-      throw new Error('DATABASE_URL não configurada: persistência de postagens indisponível.')
+
+    async findById(id) {
+      const row = db.prepare('SELECT * FROM postagens WHERE id = ?').get(id) as PostagemRow | undefined
+      return row ? rowToRecord(row) : null
+    },
+
+    async list() {
+      const rows = db.prepare('SELECT * FROM postagens ORDER BY created_at DESC').all() as PostagemRow[]
+      return rows.map(rowToRecord)
     },
   }
 }
